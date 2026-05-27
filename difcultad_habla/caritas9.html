@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>caritas – avatar facial reactivo ético</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; background: #1e1e2f; color: #e0e0e0; margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #app { width: 100%; max-width: 420px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .pantalla { display: none; flex-direction: column; align-items: center; padding: 0.5rem; flex: 1; overflow-y: auto; }
+        .pantalla.activa { display: flex; }
+        canvas { border: 1px solid #444; border-radius: 50%; background: #2a2a3c; margin: 0.5rem 0; max-width: 100%; height: auto; }
+        textarea { width: 100%; max-width: 100%; padding: 0.5rem; border-radius: 8px; border: none; background: #333; color: white; resize: vertical; font-size: 1rem; margin-bottom: 0.5rem; }
+        .buttons { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; margin: 0.3rem 0; }
+        button { padding: 0.7rem 1.2rem; border: none; border-radius: 24px; background: #4a4a8a; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 0.95rem; min-width: 44px; min-height: 44px; }
+        button:hover { background: #6a6aaa; }
+        button:disabled { opacity: 0.5; pointer-events: none; }
+        .emotion-btns button { font-size: 1.7rem; padding: 0.3rem 0.7rem; border-radius: 50%; min-width: 46px; min-height: 46px; }
+        #btnParar { background: #8a4a4a; }
+        .barra-inferior { display: flex; justify-content: space-around; background: #2a2a3c; padding: 0.5rem; border-top: 1px solid #444; }
+        .barra-inferior button { font-size: 1.3rem; padding: 0.5rem; background: transparent; color: #ccc; flex: 1; }
+        .barra-inferior button.activo { color: #00ffff; background: #3a3a5a; }
+        .lista-frases { width: 100%; display: flex; flex-direction: column; gap: 0.4rem; }
+        .frase-item { display: flex; gap: 0.3rem; align-items: center; background: #2a2a3c; padding: 0.4rem; border-radius: 8px; }
+        .frase-item button { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+        .frase-texto { flex: 1; word-break: break-word; }
+        .panel-config { width: 100%; }
+        details { margin-bottom: 0.5rem; background: #2a2a3c; padding: 0.5rem; border-radius: 8px; }
+        summary { cursor: pointer; }
+        select, input[type=range] { width: 100%; margin: 0.3rem 0; }
+        .skins-preview { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .skin-opt { padding: 0.4rem 0.8rem; background: #3a3a5a; border-radius: 12px; cursor: pointer; font-size: 0.9rem; }
+        .skin-opt.seleccionado { background: #00aaaa; color: #000; }
+        #aviso-unico { background: #3a3a5a; padding: 0.5rem; border-radius: 8px; margin: 0.2rem 0; text-align: center; font-size: 0.8rem; color: #ccc; }
+        @media (max-width: 400px) {
+            .emotion-btns button { font-size: 1.5rem; min-width: 38px; min-height: 38px; }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <!-- Pantalla Avatar -->
+    <div id="pantalla-avatar" class="pantalla activa">
+        <h2>😸 caritas</h2>
+        <div id="aviso-unico">Este asistente genera voz y expresión sintética. No es una persona real.</div>
+        <canvas id="cara" width="280" height="280"></canvas>
+        <textarea id="texto" rows="3" placeholder="Escribe o pega texto...">Hola, no estoy muy feliz, pero tampoco estoy triste.</textarea>
+        <div class="buttons">
+            <button id="btnHablar">🗣️ Hablar</button>
+            <button id="btnNarrar">📖 Narrar</button>
+            <button id="btnParar" style="display:none;">⏹️ Parar</button>
+        </div>
+        <div class="buttons emotion-btns" id="emocionesManuales">
+            <button data-emocion="positivo" title="Alegre">😊</button>
+            <button data-emocion="negativo" title="Triste">😢</button>
+            <button data-emocion="neutro" title="Neutro">😐</button>
+            <button data-emocion="sorpresa" title="Sorpresa">😮</button>
+            <button data-emocion="enfado" title="Enfado">😠</button>
+            <button data-emocion="automatico" title="Automático">🤖 Auto</button>
+        </div>
+    </div>
+
+    <!-- Pantalla Frases -->
+    <div id="pantalla-frases" class="pantalla">
+        <h3>💬 Mis frases</h3>
+        <div class="buttons">
+            <button id="btnNuevaFrase">➕ Nueva</button>
+            <button id="btnSoloCara" style="background:#555;">👁️ Solo cara: OFF</button>
+        </div>
+        <div class="lista-frases" id="listaFrases"></div>
+    </div>
+
+    <!-- Pantalla Ajustes -->
+    <div id="pantalla-ajustes" class="pantalla">
+        <h3>⚙️ Ajustes</h3>
+        <div class="panel-config">
+            <details>
+                <summary>🎤 Voz y velocidad</summary>
+                <label>Velocidad base: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"></label>
+                <label>Tono base: <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1"></label>
+                <label>Estilo de voz:
+                    <select id="estiloVoz">
+                        <option value="normal">Normal</option>
+                        <option value="duendecillo">Duendecillo</option>
+                        <option value="abuelito">Abuelito</option>
+                        <option value="robot">Robot</option>
+                        <option value="susurro">Susurro</option>
+                    </select>
+                </label>
+                <label>Voz del sistema: <select id="selectorVoces"></select></label>
+            </details>
+            <details>
+                <summary>🎨 Apariencia</summary>
+                <div class="skins-preview" id="skinsPreview"></div>
+            </details>
+            <button id="btnGuardarConfig">Guardar configuración</button>
+        </div>
+    </div>
+
+    <!-- Barra inferior de navegación -->
+    <div class="barra-inferior">
+        <button data-pantalla="pantalla-avatar" class="activo">🏠</button>
+        <button data-pantalla="pantalla-frases">💬</button>
+        <button data-pantalla="pantalla-ajustes">⚙️</button>
+    </div>
+</div>
+
+<script>
+    // ====================== EVENT BUS (Pub/Sub para arquitectura hexagonal) ======================
+    // Futuro: extraer a módulo separado. Ahora es un objeto global simple.
+    const EventBus = {
+        listeners: {},
+        on(event, callback) { (this.listeners[event] = this.listeners[event] || []).push(callback); },
+        emit(event, data) { (this.listeners[event] || []).forEach(cb => cb(data)); }
+    };
+
+    // ====================== STORAGE (Puerto de persistencia) ======================
+    // Futuro: inyectar otro adaptador (IndexedDB, servidor). Ahora localStorage.
+    const Storage = {
+        guardar(clave, valor) { try { localStorage.setItem('caritas_'+clave, JSON.stringify(valor)); } catch(e){} },
+        cargar(clave, defecto) { try { const v = localStorage.getItem('caritas_'+clave); return v ? JSON.parse(v) : defecto; } catch(e){ return defecto; } }
+    };
+
+    // ====================== ESTADO GLOBAL (Core del dominio) ======================
+    const state = {
+        emocionManual: 'automatico',
+        narrando: false,
+        soloCara: false,               // true = no emite voz
+        listaFragmentos: [],
+        indiceFragmento: 0,
+        emocionActual: 'neutro',
+        emocionObjetivo: 'neutro',
+        tiempoTransicion: 0,
+        bocaAbierta: false,
+        config: Storage.cargar('config', { rate: 1.0, pitch: 1.0, vozNombre: null, estiloVoz: 'normal', skin: 'clasico' }),
+        frases: Storage.cargar('frases', [
+            { texto: 'Hola, ¿cómo estás?', emocion: 'positivo' },
+            { texto: 'Necesito ayuda, por favor.', emocion: 'negativo' },
+            { texto: 'Tengo sed.', emocion: 'neutro' }
+        ])
+    };
+    const DURACION_TRANSICION = 250; // ms
+
+    // ====================== LÉXICO (Adaptador de análisis de sentimiento) ======================
+    const lexicon = {
+        'genial':{tipo:'positivo',peso:2}, 'bien':{tipo:'positivo',peso:1}, 'feliz':{tipo:'positivo',peso:2},
+        'alegre':{tipo:'positivo',peso:2}, 'amor':{tipo:'positivo',peso:2}, 'gracias':{tipo:'positivo',peso:1},
+        'maravilloso':{tipo:'positivo',peso:3}, 'estupendo':{tipo:'positivo',peso:2}, 'fantástico':{tipo:'positivo',peso:2},
+        'triste':{tipo:'negativo',peso:2}, 'mal':{tipo:'negativo',peso:1}, 'peor':{tipo:'negativo',peso:2},
+        'odio':{tipo:'negativo',peso:3}, 'horrible':{tipo:'negativo',peso:3}, 'pena':{tipo:'negativo',peso:2},
+        'fatal':{tipo:'negativo',peso:2}, 'terrible':{tipo:'negativo',peso:2}, 'asco':{tipo:'negativo',peso:2},
+        'sorpresa':{tipo:'sorpresa',peso:1}, 'increíble':{tipo:'sorpresa',peso:2}, 'guau':{tipo:'sorpresa',peso:2},
+        'vaya':{tipo:'sorpresa',peso:1}, 'ostras':{tipo:'sorpresa',peso:1}, 'asombroso':{tipo:'sorpresa',peso:2},
+        'enfadado':{tipo:'enfado',peso:2}, 'furioso':{tipo:'enfado',peso:3}, 'rabia':{tipo:'enfado',peso:2},
+        'cabreado':{tipo:'enfado',peso:2}, 'indignado':{tipo:'enfado',peso:2}
+    };
+    const negaciones = ['no','nunca','jamás','sin','tampoco','ni','nadie'];
+    const intensificadores = { 'muy':2, 'extremadamente':3, 'mucho':2, 'poco':0.5, 'algo':0.7, 'bastante':1.5 };
+
+    function invertirTipo(tipo) {
+        if (tipo==='positivo') return 'negativo';
+        if (tipo==='negativo') return 'positivo';
+        return 'neutro';
+    }
+
+    function analizarSentimiento(texto) {
+        if (state.emocionManual !== 'automatico') return state.emocionManual;
+        let punt = { positivo:0, negativo:0, sorpresa:0, enfado:0 };
+        const tokens = texto.toLowerCase().split(/[^a-záéíóúüñ]+/);
+        let negActiva = false, intensidad = 1.0;
+        tokens.forEach(token => {
+            if (negaciones.includes(token)) { negActiva = true; return; }
+            if (intensificadores[token]) { intensidad = intensificadores[token]; return; }
+            if (lexicon[token]) {
+                let { tipo, peso } = lexicon[token];
+                peso *= intensidad;
+                if (negActiva) { tipo = invertirTipo(tipo); negActiva = false; }
+                if (punt[tipo] !== undefined) punt[tipo] += peso;
+                intensidad = 1.0;
+            } else { negActiva = false; intensidad = 1.0; }
+        });
+        let maxTipo = 'neutro', maxPeso = 0;
+        for (let t in punt) { if (punt[t] > maxPeso) { maxPeso = punt[t]; maxTipo = t; } }
+        return maxPeso >= 1 ? maxTipo : 'neutro';
+    }
+
+    // ====================== SKINS (Adaptador de renderizado) ======================
+    const skins = {
+        clasico: { colorCabeza:'#2a2a3c', colorBorde:'#ccc', colorCejas:'#fff', orejas:null, accesorio:null },
+        gatito: { colorCabeza:'#3a3a4c', colorBorde:'#ffaa00', colorCejas:'#ffaa00', orejas:'gatito', accesorio:'bigotes' },
+        robot: { colorCabeza:'#4a4a5c', colorBorde:'#00ccff', colorCejas:'#00ccff', orejas:'antenas', accesorio:'panel' },
+        amigable: { colorCabeza:'#3a4a3a', colorBorde:'#aaffaa', colorCejas:'#aaffaa', orejas:null, accesorio:'rubor' }
+    };
+
+    let canvas, ctx;
+    function inicializarCanvas() {
+        canvas = document.getElementById('cara');
+        ctx = canvas.getContext('2d');
+        const ancho = Math.min(window.innerWidth * 0.85, 280);
+        canvas.width = ancho; canvas.height = ancho;
+    }
+    function dibujarCara() {
+        if (!ctx) return;
+        const skin = skins[state.config.skin] || skins.clasico;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width/2, cy = canvas.height/2;
+        const r = Math.min(canvas.width, canvas.height) * 0.38;
+
+        // Orejas o accesorios según skin
+        if (skin.orejas === 'gatito') {
+            ctx.fillStyle = skin.colorCabeza; ctx.strokeStyle = skin.colorBorde;
+            [-1,1].forEach(lado => {
+                ctx.beginPath(); ctx.arc(cx + lado*r*0.7, cy - r*0.85, r*0.25, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            });
+        } else if (skin.orejas === 'antenas') {
+            ctx.strokeStyle = skin.colorBorde;
+            [-1,1].forEach(lado => {
+                ctx.beginPath(); ctx.moveTo(cx + lado*r*0.5, cy - r*1.1); ctx.lineTo(cx + lado*r*0.6, cy - r*0.9);
+                ctx.stroke(); ctx.beginPath(); ctx.arc(cx + lado*r*0.5, cy - r*1.15, r*0.08, 0, Math.PI*2); ctx.stroke();
+            });
+        }
+
+        // Cabeza
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.fillStyle = skin.colorCabeza; ctx.fill(); ctx.strokeStyle = skin.colorBorde; ctx.stroke();
+
+        // Bigotes (gatito)
+        if (skin.accesorio === 'bigotes') {
+            ctx.strokeStyle = '#fff';
+            [-1,1].forEach(lado => {
+                for (let i=-1; i<=1; i+=1) {
+                    ctx.beginPath(); ctx.moveTo(cx + lado*r*0.3, cy - r*0.1 + i*r*0.1);
+                    ctx.lineTo(cx + lado*r*0.8, cy - r*0.2 + i*r*0.15); ctx.stroke();
+                }
+            });
+        }
+        // Rubor (amigable)
+        if (skin.accesorio === 'rubor') {
+            [-1,1].forEach(lado => {
+                ctx.beginPath(); ctx.arc(cx + lado*r*0.55, cy + r*0.05, r*0.15, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,100,100,0.4)'; ctx.fill();
+            });
+        }
+        // Panel (robot)
+        if (skin.accesorio === 'panel') {
+            ctx.fillStyle = '#00ccff33'; ctx.fillRect(cx - r*0.3, cy - r*0.2, r*0.6, r*0.4);
+        }
+
+        const emocion = state.emocionActual;
+        const ojoY = cy - r*0.55, ojoOffX = r*0.45, cejaY = ojoY - r*0.3;
+        const bocaY = cy + r*0.45, bocaAncho = r*0.45, bocaAlto = r*0.2;
+
+        // Ojos
+        ctx.strokeStyle = '#fff'; ctx.beginPath();
+        ctx.arc(cx - ojoOffX, ojoY, r*0.1, 0, Math.PI, false); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx + ojoOffX, ojoY, r*0.1, 0, Math.PI, false); ctx.stroke();
+
+        // Cejas
+        ctx.strokeStyle = skin.colorCejas; ctx.beginPath();
+        if (emocion === 'positivo') {
+            ctx.moveTo(cx-ojoOffX-15, cejaY); ctx.quadraticCurveTo(cx-ojoOffX, cejaY-10, cx-ojoOffX+15, cejaY);
+            ctx.moveTo(cx+ojoOffX+15, cejaY); ctx.quadraticCurveTo(cx+ojoOffX, cejaY-10, cx+ojoOffX-15, cejaY);
+        } else if (emocion === 'negativo') {
+            ctx.moveTo(cx-ojoOffX-15, cejaY+5); ctx.lineTo(cx-ojoOffX+15, cejaY);
+            ctx.moveTo(cx+ojoOffX+15, cejaY+5); ctx.lineTo(cx+ojoOffX-15, cejaY);
+        } else if (emocion === 'sorpresa') {
+            ctx.moveTo(cx-ojoOffX-15, cejaY-8); ctx.quadraticCurveTo(cx-ojoOffX, cejaY-18, cx-ojoOffX+15, cejaY-8);
+            ctx.moveTo(cx+ojoOffX+15, cejaY-8); ctx.quadraticCurveTo(cx+ojoOffX, cejaY-18, cx+ojoOffX-15, cejaY-8);
+        } else if (emocion === 'enfado') {
+            ctx.moveTo(cx-ojoOffX-18, cejaY); ctx.lineTo(cx-ojoOffX+12, cejaY-8);
+            ctx.moveTo(cx+ojoOffX+18, cejaY); ctx.lineTo(cx+ojoOffX-12, cejaY-8);
+        } else {
+            ctx.moveTo(cx-ojoOffX-15, cejaY); ctx.lineTo(cx-ojoOffX+15, cejaY);
+            ctx.moveTo(cx+ojoOffX+15, cejaY); ctx.lineTo(cx+ojoOffX-15, cejaY);
+        }
+        ctx.stroke();
+
+        // Boca
+        ctx.beginPath(); ctx.strokeStyle = '#fff';
+        if (state.bocaAbierta) {
+            ctx.ellipse(cx, bocaY, bocaAncho*0.4, bocaAlto*0.8, 0, 0, Math.PI*2);
+        } else if (emocion === 'positivo') {
+            ctx.arc(cx, bocaY, bocaAncho*0.6, 0, Math.PI, false);
+        } else if (emocion === 'negativo') {
+            ctx.arc(cx, bocaY+bocaAlto*0.7, bocaAncho*0.6, Math.PI, 2*Math.PI, false);
+        } else if (emocion === 'sorpresa') {
+            ctx.arc(cx, bocaY, bocaAncho*0.3, 0, Math.PI*2);
+        } else if (emocion === 'enfado') {
+            ctx.moveTo(cx-bocaAncho*0.5, bocaY); ctx.lineTo(cx+bocaAncho*0.5, bocaY);
+        } else {
+            ctx.moveTo(cx-bocaAncho*0.5, bocaY); ctx.lineTo(cx+bocaAncho*0.5, bocaY);
+        }
+        ctx.stroke();
+
+        // Pupilas
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(cx-ojoOffX, ojoY+2, r*0.05, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+ojoOffX, ojoY+2, r*0.05, 0, Math.PI*2); ctx.fill();
+
+        // Marca de agua ética (siempre presente)
+        ctx.font = `${r*0.13}px sans-serif`; ctx.fillStyle = 'rgba(0,255,255,0.8)';
+        ctx.fillText('🤖 IA', 6, 18);
+    }
+
+    function setEmocion(nueva) {
+        if (state.emocionObjetivo === nueva) return;
+        state.emocionObjetivo = nueva;
+        state.tiempoTransicion = performance.now();
+    }
+    function actualizarTransicion() {
+        if (state.emocionActual === state.emocionObjetivo) return;
+        if (performance.now() - state.tiempoTransicion >= DURACION_TRANSICION) state.emocionActual = state.emocionObjetivo;
+    }
+
+    // ====================== SÍNTESIS DE VOZ (Adaptador de habla) ======================
+    let utteranceActual = null;
+    function crearUtterance(texto, emocion) {
+        const utt = new SpeechSynthesisUtterance(texto);
+        let rate = state.config.rate, pitch = state.config.pitch;
+        // Aplicar estilo de voz
+        switch(state.config.estiloVoz) {
+            case 'duendecillo': pitch *= 1.4; rate *= 1.2; break;
+            case 'abuelito': pitch *= 0.75; rate *= 0.85; break;
+            case 'robot': pitch *= 0.6; rate *= 1.0; break;
+            case 'susurro': pitch *= 0.9; rate *= 0.8; break;
+        }
+        // Modulación emocional encima del estilo
+        switch(emocion) {
+            case 'positivo': pitch *= 1.25; rate *= 1.15; break;
+            case 'negativo': pitch *= 0.8; rate *= 0.85; break;
+            case 'sorpresa': pitch *= 1.5; rate *= 1.3; break;
+            case 'enfado': pitch *= 0.85; rate *= 1.2; break;
+        }
+        utt.rate = rate; utt.pitch = pitch;
+        if (state.config.vozNombre) {
+            const voces = speechSynthesis.getVoices();
+            utt.voice = voces.find(v => v.name === state.config.vozNombre) || null;
+        }
+        return utt;
+    }
+
+    function hablarConEmocion(texto, emocionForzada = null) {
+        if (state.soloCara) {
+            setEmocion(emocionForzada || analizarSentimiento(texto));
+            return;
+        }
+        speechSynthesis.cancel();
+        if (state.narrando) finalizarNarracion();
+        const emocion = emocionForzada || analizarSentimiento(texto);
+        setEmocion(emocion);
+        utteranceActual = crearUtterance(texto, emocion);
+        let intervalo;
+        utteranceActual.onstart = () => { intervalo = setInterval(() => { state.bocaAbierta = !state.bocaAbierta; }, 120); };
+        utteranceActual.onend = () => { clearInterval(intervalo); state.bocaAbierta = false; };
+        utteranceActual.onerror = () => { clearInterval(intervalo); state.bocaAbierta = false; };
+        speechSynthesis.speak(utteranceActual);
+    }
+
+    function narrarTexto(textoCompleto) {
+        if (state.narrando) return;
+        state.listaFragmentos = (textoCompleto.match(/[^.!?¡¿]+[.!?¡¿]*/g) || [textoCompleto]).map(f=>f.trim()).filter(f=>f);
+        if (!state.listaFragmentos.length) return;
+        state.indiceFragmento = 0;
+        state.narrando = true;
+        EventBus.emit('narracionIniciada');
+        narrarSiguiente();
+    }
+    function narrarSiguiente() {
+        if (!state.narrando || state.indiceFragmento >= state.listaFragmentos.length) { finalizarNarracion(); return; }
+        const fragmento = state.listaFragmentos[state.indiceFragmento];
+        speechSynthesis.cancel();
+        if (state.soloCara) {
+            setEmocion(analizarSentimiento(fragmento));
+            state.indiceFragmento++;
+            setTimeout(narrarSiguiente, 500);
+            return;
+        }
+        const emocion = analizarSentimiento(fragmento);
+        setEmocion(emocion);
+        utteranceActual = crearUtterance(fragmento, emocion);
+        let intervalo;
+        utteranceActual.onstart = () => { intervalo = setInterval(() => { state.bocaAbierta = !state.bocaAbierta; }, 120); };
+        utteranceActual.onend = () => {
+            clearInterval(intervalo); state.bocaAbierta = false;
+            state.indiceFragmento++;
+            narrarSiguiente();
+        };
+        utteranceActual.onerror = () => { clearInterval(intervalo); state.bocaAbierta = false; finalizarNarracion(); };
+        speechSynthesis.speak(utteranceActual);
+    }
+    function finalizarNarracion() {
+        state.narrando = false; state.bocaAbierta = false;
+        EventBus.emit('narracionFinalizada');
+    }
+    function pararNarracion() { speechSynthesis.cancel(); finalizarNarracion(); }
+
+    // ====================== UI (Adaptadores de interfaz) ======================
+    function cambiarPantalla(nombre) {
+        document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+        document.getElementById(nombre).classList.add('activa');
+        document.querySelectorAll('.barra-inferior button').forEach(b => b.classList.remove('activo'));
+        document.querySelector(`.barra-inferior button[data-pantalla="${nombre}"]`).classList.add('activo');
+    }
+
+    function renderizarFrases() {
+        const lista = document.getElementById('listaFrases');
+        lista.innerHTML = '';
+        state.frases.forEach((f, idx) => {
+            const div = document.createElement('div'); div.className = 'frase-item';
+            const span = document.createElement('span'); span.className = 'frase-texto'; span.textContent = f.texto;
+            const btnHablar = document.createElement('button'); btnHablar.textContent = '🗣️'; btnHablar.title = 'Hablar';
+            btnHablar.onclick = () => hablarConEmocion(f.texto, f.emocion || null);
+            const btnBorrar = document.createElement('button'); btnBorrar.textContent = '🗑️'; btnBorrar.title = 'Borrar';
+            btnBorrar.onclick = () => { state.frases.splice(idx,1); Storage.guardar('frases', state.frases); renderizarFrases(); };
+            div.append(span, btnHablar, btnBorrar);
+            lista.appendChild(div);
+        });
+    }
+
+    function nuevaFrase() {
+        const texto = prompt('Escribe la frase:');
+        if (!texto || !texto.trim()) return;
+        const emocion = prompt('Emoción (positivo, negativo, neutro, sorpresa, enfado, o dejar vacío para automático):') || 'automatico';
+        state.frases.push({ texto: texto.trim(), emocion: emocion === 'automatico' ? null : emocion });
+        Storage.guardar('frases', state.frases);
+        renderizarFrases();
+    }
+
+    function renderizarSkins() {
+        const cont = document.getElementById('skinsPreview');
+        cont.innerHTML = '';
+        Object.keys(skins).forEach(nombre => {
+            const btn = document.createElement('span');
+            btn.className = 'skin-opt' + (state.config.skin === nombre ? ' seleccionado' : '');
+            btn.textContent = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+            btn.onclick = () => {
+                state.config.skin = nombre;
+                Storage.guardar('config', state.config);
+                renderizarSkins();
+                dibujarCara();
+            };
+            cont.appendChild(btn);
+        });
+    }
+
+    function cargarVoces() {
+        const sel = document.getElementById('selectorVoces');
+        sel.innerHTML = '';
+        const voces = speechSynthesis.getVoices();
+        (voces.length ? voces : [{name:'default', lang:'es' }]).forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.name; opt.textContent = `${v.name} (${v.lang})`;
+            sel.appendChild(opt);
+        });
+        if (state.config.vozNombre) sel.value = state.config.vozNombre;
+    }
+
+    function guardarConfig() {
+        state.config.rate = parseFloat(document.getElementById('rate').value);
+        state.config.pitch = parseFloat(document.getElementById('pitch').value);
+        state.config.estiloVoz = document.getElementById('estiloVoz').value;
+        state.config.vozNombre = document.getElementById('selectorVoces').value;
+        Storage.guardar('config', state.config);
+        alert('Configuración guardada.');
+    }
+
+    // ====================== INICIALIZACIÓN ======================
+    window.onload = () => {
+        inicializarCanvas();
+        renderizarFrases();
+        renderizarSkins();
+        cargarVoces();
+        speechSynthesis.onvoiceschanged = cargarVoces;
+
+        // Aplicar configuración guardada a los controles
+        document.getElementById('rate').value = state.config.rate;
+        document.getElementById('pitch').value = state.config.pitch;
+        document.getElementById('estiloVoz').value = state.config.estiloVoz;
+        document.getElementById('selectorVoces').value = state.config.vozNombre || '';
+
+        // Eventos UI
+        document.getElementById('btnHablar').onclick = () => hablarConEmocion(document.getElementById('texto').value.trim());
+        document.getElementById('btnNarrar').onclick = () => narrarTexto(document.getElementById('texto').value.trim());
+        document.getElementById('btnParar').onclick = pararNarracion;
+        document.getElementById('btnNuevaFrase').onclick = nuevaFrase;
+        document.getElementById('btnSoloCara').onclick = function() {
+            state.soloCara = !state.soloCara;
+            this.textContent = state.soloCara ? '👁️ Solo cara: ON' : '👁️ Solo cara: OFF';
+            this.style.background = state.soloCara ? '#00aaaa' : '#555';
+        };
+        document.getElementById('btnGuardarConfig').onclick = guardarConfig;
+
+        // Emociones manuales
+        document.querySelectorAll('.emotion-btns button').forEach(btn => {
+            btn.onclick = () => {
+                state.emocionManual = btn.dataset.emocion;
+                document.querySelectorAll('.emotion-btns button').forEach(b => b.style.background = '#4a4a8a');
+                btn.style.background = '#8a4a8a';
+                if (state.emocionManual !== 'automatico') setEmocion(state.emocionManual);
+            };
+        });
+
+        // Barra inferior
+        document.querySelectorAll('.barra-inferior button').forEach(btn => {
+            btn.onclick = () => cambiarPantalla(btn.dataset.pantalla);
+        });
+
+        // Suscripciones a eventos para UI (narración)
+        EventBus.on('narracionIniciada', () => {
+            document.getElementById('btnHablar').disabled = true;
+            document.getElementById('btnNarrar').disabled = true;
+            document.getElementById('btnParar').style.display = 'inline-block';
+        });
+        EventBus.on('narracionFinalizada', () => {
+            document.getElementById('btnHablar').disabled = false;
+            document.getElementById('btnNarrar').disabled = false;
+            document.getElementById('btnParar').style.display = 'none';
+        });
+
+        // Aviso ético único
+        const aviso = document.getElementById('aviso-unico');
+        if (aviso) setTimeout(() => aviso.style.display = 'none', 8000);
+
+        // Bucle de animación
+        function loop() {
+            actualizarTransicion();
+            if (document.getElementById('pantalla-avatar').classList.contains('activa')) dibujarCara();
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+    };
+</script>
+</body>
+</html>
