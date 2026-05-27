@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>caritas – avatar facial reactivo ético</title>
+    <style>
+        body { font-family: sans-serif; background: #1e1e2f; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 1rem; }
+        canvas { border: 1px solid #444; border-radius: 50%; background: #2a2a3c; margin: 1rem 0; }
+        textarea { width: 100%; max-width: 400px; padding: 0.5rem; border-radius: 8px; border: none; background: #333; color: white; resize: vertical; }
+        .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin: 0.5rem 0; }
+        button { padding: 0.6rem 1.2rem; border: none; border-radius: 20px; background: #4a4a8a; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #6a6aaa; }
+        .emotion-btns button { font-size: 1.5rem; padding: 0.4rem 0.8rem; border-radius: 50%; }
+        .config-panel { background: #2a2a3c; padding: 1rem; border-radius: 12px; margin-top: 1rem; max-width: 400px; width: 100%; }
+        .config-panel label { display: block; margin: 0.3rem 0; }
+        .config-panel input[type=range] { width: 100%; }
+        summary { cursor: pointer; margin-bottom: 0.5rem; }
+        .watermark { position: absolute; bottom: 8px; right: 12px; color: cyan; font-size: 0.7rem; opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <h2>😸 caritas</h2>
+    <p>Avatar que habla con tu tono y nunca esconde que es IA</p>
+
+    <!-- Canvas con marca de agua (inyectada por el adaptador) -->
+    <div style="position: relative; display: inline-block;">
+        <canvas id="cara" width="300" height="300"></canvas>
+        <div class="watermark" id="watermark">🤖 IA</div>
+    </div>
+
+    <textarea id="texto" rows="3" placeholder="Escribe algo...">Hola, me siento genial hoy.</textarea>
+
+    <div class="buttons">
+        <button onclick="hablarConEtica()">🗣️ Hablar</button>
+    </div>
+
+    <div class="buttons emotion-btns" id="emocionesManuales">
+        <button onclick="setEmocionManual('positivo')" title="Alegre">😊</button>
+        <button onclick="setEmocionManual('negativo')" title="Triste">😢</button>
+        <button onclick="setEmocionManual('neutro')" title="Neutro">😐</button>
+        <button onclick="setEmocionManual('sorpresa')" title="Sorpresa">😮</button>
+        <button onclick="setEmocionManual('enfado')" title="Enfado">😠</button>
+        <button onclick="setEmocionManual('automatico')" title="Automático">🤖 Auto</button>
+    </div>
+
+    <details class="config-panel">
+        <summary>⚙️ Configuración (voz y sensibilidad)</summary>
+        <label>Velocidad: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"></label>
+        <label>Tono (pitch): <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1"></label>
+        <label>Umbral sentimiento (+): <input type="range" id="umbralPos" min="0" max="5" value="1"></label>
+        <button onclick="guardarConfig()">Guardar</button>
+    </details>
+
+    <script>
+        // ====================== CORE (motor de cara y voz) ======================
+        const canvas = document.getElementById('cara');
+        const ctx = canvas.getContext('2d');
+        let sentimiento = 'neutro';       // 'positivo', 'negativo', 'neutro', 'sorpresa', 'enfado'
+        let bocaAbierta = false;
+        let emocionManual = 'automatico'; // 'automatico' o uno de los valores fijos
+
+        // Configuración (modificable por el usuario)
+        let config = {
+            rate: 1.0,
+            pitch: 1.0,
+            umbralPositivo: 1      // cuántas palabras positivas más que negativas para activar positivo
+        };
+
+        // Palabras clave para detección automática
+        const palabrasPositivas = ['bien', 'genial', 'feliz', 'alegre', 'amor', 'gracias', 'maravilloso', 'estupendo', 'fantástico'];
+        const palabrasNegativas = ['triste', 'mal', 'peor', 'odio', 'horrible', 'pena', 'fatal', 'terrible', 'asco'];
+        const palabrasSorpresa = ['sorpresa', 'increíble', 'guau', 'vaya', 'ostras', 'asombroso'];
+        const palabrasEnfado = ['enfadado', 'furioso', 'rabia', 'cabreado', 'indignado'];
+
+        function analizarSentimiento(texto) {
+            if (emocionManual !== 'automatico') return emocionManual;
+
+            let pos = 0, neg = 0, sor = 0, enf = 0;
+            const tokens = texto.toLowerCase().split(/[^a-záéíóúüñ]+/);
+            tokens.forEach(p => {
+                if (palabrasPositivas.includes(p)) pos++;
+                if (palabrasNegativas.includes(p)) neg++;
+                if (palabrasSorpresa.includes(p)) sor++;
+                if (palabrasEnfado.includes(p)) enf++;
+            });
+            if (enf > 0 && enf >= sor) return 'enfado';
+            if (sor > 0) return 'sorpresa';
+            if (pos - neg >= config.umbralPositivo) return 'positivo';
+            if (neg - pos >= config.umbralPositivo) return 'negativo';
+            return 'neutro';
+        }
+
+        function dibujarCara() {
+            ctx.clearRect(0, 0, 300, 300);
+            // Cabeza
+            ctx.beginPath();
+            ctx.arc(150, 150, 100, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ccc';
+            ctx.stroke();
+            // Ojos
+            ctx.beginPath();
+            ctx.arc(110, 120, 10, 0, Math.PI, false);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(190, 120, 10, 0, Math.PI, false);
+            ctx.stroke();
+            // Cejas según sentimiento
+            ctx.beginPath();
+            ctx.strokeStyle = '#fff';
+            if (sentimiento === 'positivo') {
+                ctx.moveTo(95, 100); ctx.quadraticCurveTo(110, 85, 125, 100);
+                ctx.moveTo(205, 100); ctx.quadraticCurveTo(220, 85, 175, 100);
+            } else if (sentimiento === 'negativo') {
+                ctx.moveTo(90, 105); ctx.lineTo(130, 115);
+                ctx.moveTo(210, 105); ctx.lineTo(170, 115);
+            } else if (sentimiento === 'sorpresa') {
+                ctx.moveTo(95, 90); ctx.quadraticCurveTo(110, 75, 125, 90);
+                ctx.moveTo(205, 90); ctx.quadraticCurveTo(220, 75, 175, 90);
+            } else if (sentimiento === 'enfado') {
+                ctx.moveTo(85, 110); ctx.lineTo(125, 100);
+                ctx.moveTo(215, 110); ctx.lineTo(175, 100);
+            } else {
+                ctx.moveTo(95, 100); ctx.lineTo(125, 100);
+                ctx.moveTo(205, 100); ctx.lineTo(175, 100);
+            }
+            ctx.stroke();
+            // Boca
+            ctx.beginPath();
+            if (bocaAbierta) {
+                ctx.ellipse(150, 200, 20, 10, 0, 0, Math.PI * 2);
+            } else {
+                if (sentimiento === 'positivo') {
+                    ctx.arc(150, 200, 30, 0, Math.PI, false);
+                } else if (sentimiento === 'negativo') {
+                    ctx.arc(150, 220, 30, Math.PI, 2*Math.PI, false);
+                } else if (sentimiento === 'sorpresa') {
+                    ctx.arc(150, 205, 15, 0, Math.PI * 2); // boca redonda
+                } else if (sentimiento === 'enfado') {
+                    ctx.moveTo(120, 200); ctx.lineTo(180, 200); // línea recta apretada
+                } else {
+                    ctx.moveTo(120, 200); ctx.lineTo(180, 200);
+                }
+            }
+            ctx.stroke();
+            // Pupilas simples (opcional)
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(110, 120, 3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(190, 120, 3, 0, Math.PI*2); ctx.fill();
+        }
+
+        function hablarCore(texto) {
+            sentimiento = analizarSentimiento(texto);
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.rate = config.rate;
+            utterance.pitch = config.pitch;
+
+            let intervalo;
+            utterance.onstart = () => {
+                intervalo = setInterval(() => {
+                    bocaAbierta = !bocaAbierta;
+                    dibujarCara();
+                }, 120);
+            };
+            utterance.onend = () => {
+                clearInterval(intervalo);
+                bocaAbierta = false;
+                dibujarCara();
+            };
+            dibujarCara();
+            speechSynthesis.speak(utterance);
+        }
+
+        // ====================== ADAPTADOR ÉTICO DE SALIDA ======================
+        const ethicalAdapter = {
+            watermarkText: '🤖 IA',
+            prefixText: 'Atención: mensaje generado por inteligencia artificial.',
+
+            // Forzar marca de agua visual (ya está en el HTML, pero aseguramos que nunca se borre)
+            enforceWatermark() {
+                const wm = document.getElementById('watermark');
+                if (wm) wm.style.display = 'block';
+            },
+
+            // Hablar con prefijo ético inamovible
+            speakWithEthics(textoUsuario) {
+                this.enforceWatermark();
+                const prefUtterance = new SpeechSynthesisUtterance(this.prefixText);
+                prefUtterance.rate = 0.9;  // más lento para que se note
+                prefUtterance.pitch = 1.0;
+                prefUtterance.onend = () => {
+                    // Ahora sí, el mensaje del usuario
+                    hablarCore(textoUsuario);
+                };
+                speechSynthesis.speak(prefUtterance);
+            }
+        };
+
+        // ====================== FUNCIONES DE INTERFAZ ======================
+        function hablarConEtica() {
+            const texto = document.getElementById('texto').value.trim();
+            if (texto === '') return;
+            ethicalAdapter.speakWithEthics(texto);
+        }
+
+        function setEmocionManual(emocion) {
+            emocionManual = emocion;
+            // Reflejar en los botones (opcional)
+            const botones = document.querySelectorAll('.emotion-btns button');
+            botones.forEach(b => b.style.background = '#4a4a8a');
+            event.target.style.background = '#8a4a8a';
+        }
+
+        function guardarConfig() {
+            config.rate = parseFloat(document.getElementById('rate').value);
+            config.pitch = parseFloat(document.getElementById('pitch').value);
+            config.umbralPositivo = parseInt(document.getElementById('umbralPos').value);
+            alert('Configuración guardada.');
+        }
+
+        // Al cargar, forzar marca de agua y dibujar cara inicial
+        window.onload = () => {
+            ethicalAdapter.enforceWatermark();
+            dibujarCara();
+            // Cargar configuración inicial en sliders
+            document.getElementById('rate').value = config.rate;
+            document.getElementById('pitch').value = config.pitch;
+            document.getElementById('umbralPos').value = config.umbralPositivo;
+        };
+
+        // Prevenir que se borre la marca de agua desde consola (bucle de verificación)
+        setInterval(() => {
+            const wm = document.getElementById('watermark');
+            if (wm && wm.style.display === 'none') wm.style.display = 'block';
+        }, 500);
+    </script>
+</body>
+</html>
