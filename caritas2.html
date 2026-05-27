@@ -16,23 +16,26 @@
         .config-panel label { display: block; margin: 0.3rem 0; }
         .config-panel input[type=range] { width: 100%; }
         summary { cursor: pointer; margin-bottom: 0.5rem; }
-        .watermark { position: absolute; bottom: 8px; right: 12px; color: cyan; font-size: 0.7rem; opacity: 0.8; }
+        #aviso-unico {
+            background: #3a3a5a; padding: 0.8rem; border-radius: 8px; margin: 0.5rem 0;
+            text-align: center; font-size: 0.9rem; color: #ccc;
+        }
     </style>
 </head>
 <body>
     <h2>😸 caritas</h2>
     <p>Avatar que habla con tu tono y nunca esconde que es IA</p>
 
-    <!-- Canvas con marca de agua (inyectada por el adaptador) -->
-    <div style="position: relative; display: inline-block;">
-        <canvas id="cara" width="300" height="300"></canvas>
-        <div class="watermark" id="watermark">🤖 IA</div>
-    </div>
+    <!-- Aviso de una sola vez (se oculta en 8 segundos) -->
+    <div id="aviso-unico">Este asistente genera voz y expresión sintética. No es una persona real.</div>
+
+    <!-- Solo el canvas, sin marca de agua externa -->
+    <canvas id="cara" width="300" height="300"></canvas>
 
     <textarea id="texto" rows="3" placeholder="Escribe algo...">Hola, me siento genial hoy.</textarea>
 
     <div class="buttons">
-        <button onclick="hablarConEtica()">🗣️ Hablar</button>
+        <button onclick="hablarCaritas()">🗣️ Hablar</button>
     </div>
 
     <div class="buttons emotion-btns" id="emocionesManuales">
@@ -147,9 +150,17 @@
             ctx.fillStyle = '#fff';
             ctx.beginPath(); ctx.arc(110, 120, 3, 0, Math.PI*2); ctx.fill();
             ctx.beginPath(); ctx.arc(190, 120, 3, 0, Math.PI*2); ctx.fill();
+
+            // ====== MARCA DE AGUA ÉTICA INCRUSTADA EN EL FOTOGRAMA ======
+            ctx.font = '12px sans-serif';
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
+            ctx.fillText('🤖 IA', 5, 20);   // esquina superior izquierda
+            // ===========================================================
         }
 
-        function hablarCore(texto) {
+        function hablarCaritas() {
+            const texto = document.getElementById('texto').value.trim();
+            if (texto === '') return;
             sentimiento = analizarSentimiento(texto);
             const utterance = new SpeechSynthesisUtterance(texto);
             utterance.rate = config.rate;
@@ -171,41 +182,8 @@
             speechSynthesis.speak(utterance);
         }
 
-        // ====================== ADAPTADOR ÉTICO DE SALIDA ======================
-        const ethicalAdapter = {
-            watermarkText: '🤖 IA',
-            prefixText: 'Atención: mensaje generado por inteligencia artificial.',
-
-            // Forzar marca de agua visual (ya está en el HTML, pero aseguramos que nunca se borre)
-            enforceWatermark() {
-                const wm = document.getElementById('watermark');
-                if (wm) wm.style.display = 'block';
-            },
-
-            // Hablar con prefijo ético inamovible
-            speakWithEthics(textoUsuario) {
-                this.enforceWatermark();
-                const prefUtterance = new SpeechSynthesisUtterance(this.prefixText);
-                prefUtterance.rate = 0.9;  // más lento para que se note
-                prefUtterance.pitch = 1.0;
-                prefUtterance.onend = () => {
-                    // Ahora sí, el mensaje del usuario
-                    hablarCore(textoUsuario);
-                };
-                speechSynthesis.speak(prefUtterance);
-            }
-        };
-
-        // ====================== FUNCIONES DE INTERFAZ ======================
-        function hablarConEtica() {
-            const texto = document.getElementById('texto').value.trim();
-            if (texto === '') return;
-            ethicalAdapter.speakWithEthics(texto);
-        }
-
         function setEmocionManual(emocion) {
             emocionManual = emocion;
-            // Reflejar en los botones (opcional)
             const botones = document.querySelectorAll('.emotion-btns button');
             botones.forEach(b => b.style.background = '#4a4a8a');
             event.target.style.background = '#8a4a8a';
@@ -218,21 +196,18 @@
             alert('Configuración guardada.');
         }
 
-        // Al cargar, forzar marca de agua y dibujar cara inicial
+        // Al cargar: dibujar cara inicial, ocultar aviso tras 8 segundos
         window.onload = () => {
-            ethicalAdapter.enforceWatermark();
             dibujarCara();
-            // Cargar configuración inicial en sliders
             document.getElementById('rate').value = config.rate;
             document.getElementById('pitch').value = config.pitch;
             document.getElementById('umbralPos').value = config.umbralPositivo;
-        };
 
-        // Prevenir que se borre la marca de agua desde consola (bucle de verificación)
-        setInterval(() => {
-            const wm = document.getElementById('watermark');
-            if (wm && wm.style.display === 'none') wm.style.display = 'block';
-        }, 500);
+            const aviso = document.getElementById('aviso-unico');
+            if (aviso) {
+                setTimeout(() => { aviso.style.display = 'none'; }, 8000);
+            }
+        };
     </script>
 </body>
 </html>
