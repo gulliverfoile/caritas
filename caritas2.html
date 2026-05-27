@@ -2,75 +2,79 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>caritas – avatar facial reactivo ético</title>
     <style>
-        body { font-family: sans-serif; background: #1e1e2f; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 1rem; }
-        canvas { border: 1px solid #444; border-radius: 50%; background: #2a2a3c; margin: 1rem 0; }
-        textarea { width: 100%; max-width: 400px; padding: 0.5rem; border-radius: 8px; border: none; background: #333; color: white; resize: vertical; }
-        .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin: 0.5rem 0; }
-        button { padding: 0.6rem 1.2rem; border: none; border-radius: 20px; background: #4a4a8a; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; background: #1e1e2f; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 0.5rem; margin: 0; min-height: 100vh; }
+        h2 { margin: 0.5rem 0 0; }
+        p { margin: 0.2rem 0 0.5rem; font-size: 0.9rem; }
+        canvas { border: 1px solid #444; border-radius: 50%; background: #2a2a3c; margin: 0.5rem 0; max-width: 100%; height: auto; }
+        textarea { width: 100%; max-width: 400px; padding: 0.5rem; border-radius: 8px; border: none; background: #333; color: white; resize: vertical; font-size: 1rem; }
+        .buttons { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; margin: 0.4rem 0; }
+        button { padding: 0.7rem 1.4rem; border: none; border-radius: 24px; background: #4a4a8a; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1rem; min-width: 44px; min-height: 44px; }
         button:hover { background: #6a6aaa; }
-        .emotion-btns button { font-size: 1.5rem; padding: 0.4rem 0.8rem; border-radius: 50%; }
-        .config-panel { background: #2a2a3c; padding: 1rem; border-radius: 12px; margin-top: 1rem; max-width: 400px; width: 100%; }
-        .config-panel label { display: block; margin: 0.3rem 0; }
-        .config-panel input[type=range] { width: 100%; }
+        button:disabled { opacity: 0.5; pointer-events: none; }
+        .emotion-btns button { font-size: 1.8rem; padding: 0.3rem 0.7rem; border-radius: 50%; min-width: 48px; min-height: 48px; }
+        #btnParar { background: #8a4a4a; }
+        #btnParar:hover { background: #aa6a6a; }
+        .config-panel { background: #2a2a3c; padding: 0.8rem; border-radius: 12px; margin-top: 0.5rem; max-width: 400px; width: 100%; }
+        .config-panel label { display: block; margin: 0.4rem 0; font-size: 0.9rem; }
+        .config-panel input[type=range], .config-panel select { width: 100%; }
         summary { cursor: pointer; margin-bottom: 0.5rem; }
-        #aviso-unico {
-            background: #3a3a5a; padding: 0.8rem; border-radius: 8px; margin: 0.5rem 0;
-            text-align: center; font-size: 0.9rem; color: #ccc;
+        #aviso-unico { background: #3a3a5a; padding: 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: center; font-size: 0.8rem; color: #ccc; }
+        @media (max-width: 400px) {
+            .emotion-btns button { font-size: 1.5rem; min-width: 40px; min-height: 40px; }
         }
     </style>
 </head>
 <body>
     <h2>😸 caritas</h2>
-    <p>Avatar que habla con tu tono y nunca esconde que es IA</p>
+    <p>Avatar que habla con tu tono</p>
 
-    <!-- Aviso de una sola vez (se oculta en 8 segundos) -->
     <div id="aviso-unico">Este asistente genera voz y expresión sintética. No es una persona real.</div>
 
-    <!-- Solo el canvas, sin marca de agua externa -->
-    <canvas id="cara" width="300" height="300"></canvas>
+    <canvas id="cara" width="280" height="280"></canvas>
 
-    <textarea id="texto" rows="3" placeholder="Escribe algo...">Hola, me siento genial hoy.</textarea>
+    <textarea id="texto" rows="4" placeholder="Escribe o pega texto...">Hola, me siento genial hoy.</textarea>
 
     <div class="buttons">
-        <button onclick="hablarCaritas()">🗣️ Hablar</button>
+        <button id="btnHablar" onclick="hablarCaritas()">🗣️ Hablar</button>
+        <button id="btnNarrar" onclick="narrarTexto()">📖 Narrar</button>
+        <button id="btnParar" onclick="pararNarracion()" style="display:none;">⏹️ Parar</button>
     </div>
 
     <div class="buttons emotion-btns" id="emocionesManuales">
-        <button onclick="setEmocionManual('positivo')" title="Alegre">😊</button>
-        <button onclick="setEmocionManual('negativo')" title="Triste">😢</button>
-        <button onclick="setEmocionManual('neutro')" title="Neutro">😐</button>
-        <button onclick="setEmocionManual('sorpresa')" title="Sorpresa">😮</button>
-        <button onclick="setEmocionManual('enfado')" title="Enfado">😠</button>
-        <button onclick="setEmocionManual('automatico')" title="Automático">🤖 Auto</button>
+        <button onclick="setEmocionManual('positivo', this)" title="Alegre">😊</button>
+        <button onclick="setEmocionManual('negativo', this)" title="Triste">😢</button>
+        <button onclick="setEmocionManual('neutro', this)" title="Neutro">😐</button>
+        <button onclick="setEmocionManual('sorpresa', this)" title="Sorpresa">😮</button>
+        <button onclick="setEmocionManual('enfado', this)" title="Enfado">😠</button>
+        <button onclick="setEmocionManual('automatico', this)" title="Automático">🤖 Auto</button>
     </div>
 
     <details class="config-panel">
-        <summary>⚙️ Configuración (voz y sensibilidad)</summary>
-        <label>Velocidad: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"></label>
-        <label>Tono (pitch): <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1"></label>
+        <summary>⚙️ Configuración</summary>
+        <label>Velocidad base: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"></label>
+        <label>Tono base (pitch): <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1"></label>
         <label>Umbral sentimiento (+): <input type="range" id="umbralPos" min="0" max="5" value="1"></label>
+        <label>Voz: <select id="selectorVoces"></select></label>
         <button onclick="guardarConfig()">Guardar</button>
     </details>
 
     <script>
-        // ====================== CORE (motor de cara y voz) ======================
+        // ====================== CORE ======================
         const canvas = document.getElementById('cara');
         const ctx = canvas.getContext('2d');
-        let sentimiento = 'neutro';       // 'positivo', 'negativo', 'neutro', 'sorpresa', 'enfado'
+        let sentimiento = 'neutro';
         let bocaAbierta = false;
-        let emocionManual = 'automatico'; // 'automatico' o uno de los valores fijos
+        let emocionManual = 'automatico';
+        let narrando = false;
+        let listaFragmentos = [];
+        let indiceFragmentoActual = 0;
 
-        // Configuración (modificable por el usuario)
-        let config = {
-            rate: 1.0,
-            pitch: 1.0,
-            umbralPositivo: 1      // cuántas palabras positivas más que negativas para activar positivo
-        };
+        let config = { rate: 1.0, pitch: 1.0, umbralPositivo: 1, voz: null };
 
-        // Palabras clave para detección automática
         const palabrasPositivas = ['bien', 'genial', 'feliz', 'alegre', 'amor', 'gracias', 'maravilloso', 'estupendo', 'fantástico'];
         const palabrasNegativas = ['triste', 'mal', 'peor', 'odio', 'horrible', 'pena', 'fatal', 'terrible', 'asco'];
         const palabrasSorpresa = ['sorpresa', 'increíble', 'guau', 'vaya', 'ostras', 'asombroso'];
@@ -78,7 +82,6 @@
 
         function analizarSentimiento(texto) {
             if (emocionManual !== 'automatico') return emocionManual;
-
             let pos = 0, neg = 0, sor = 0, enf = 0;
             const tokens = texto.toLowerCase().split(/[^a-záéíóúüñ]+/);
             tokens.forEach(p => {
@@ -95,76 +98,106 @@
         }
 
         function dibujarCara() {
-            ctx.clearRect(0, 0, 300, 300);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
             // Cabeza
             ctx.beginPath();
-            ctx.arc(150, 150, 100, 0, Math.PI * 2);
+            ctx.arc(cx, cy, 90, 0, Math.PI * 2);
             ctx.strokeStyle = '#ccc';
             ctx.stroke();
             // Ojos
             ctx.beginPath();
-            ctx.arc(110, 120, 10, 0, Math.PI, false);
+            ctx.arc(cx - 40, 110, 9, 0, Math.PI, false);
             ctx.stroke();
             ctx.beginPath();
-            ctx.arc(190, 120, 10, 0, Math.PI, false);
+            ctx.arc(cx + 40, 110, 9, 0, Math.PI, false);
             ctx.stroke();
             // Cejas según sentimiento
             ctx.beginPath();
             ctx.strokeStyle = '#fff';
             if (sentimiento === 'positivo') {
-                ctx.moveTo(95, 100); ctx.quadraticCurveTo(110, 85, 125, 100);
-                ctx.moveTo(205, 100); ctx.quadraticCurveTo(220, 85, 175, 100);
+                ctx.moveTo(cx - 55, 90); ctx.quadraticCurveTo(cx - 40, 75, cx - 25, 90);
+                ctx.moveTo(cx + 55, 90); ctx.quadraticCurveTo(cx + 40, 75, cx + 25, 90);
             } else if (sentimiento === 'negativo') {
-                ctx.moveTo(90, 105); ctx.lineTo(130, 115);
-                ctx.moveTo(210, 105); ctx.lineTo(170, 115);
+                ctx.moveTo(cx - 60, 95); ctx.lineTo(cx - 20, 105);
+                ctx.moveTo(cx + 60, 95); ctx.lineTo(cx + 20, 105);
             } else if (sentimiento === 'sorpresa') {
-                ctx.moveTo(95, 90); ctx.quadraticCurveTo(110, 75, 125, 90);
-                ctx.moveTo(205, 90); ctx.quadraticCurveTo(220, 75, 175, 90);
+                ctx.moveTo(cx - 55, 80); ctx.quadraticCurveTo(cx - 40, 65, cx - 25, 80);
+                ctx.moveTo(cx + 55, 80); ctx.quadraticCurveTo(cx + 40, 65, cx + 25, 80);
             } else if (sentimiento === 'enfado') {
-                ctx.moveTo(85, 110); ctx.lineTo(125, 100);
-                ctx.moveTo(215, 110); ctx.lineTo(175, 100);
+                ctx.moveTo(cx - 65, 100); ctx.lineTo(cx - 25, 90);
+                ctx.moveTo(cx + 65, 100); ctx.lineTo(cx + 25, 90);
             } else {
-                ctx.moveTo(95, 100); ctx.lineTo(125, 100);
-                ctx.moveTo(205, 100); ctx.lineTo(175, 100);
+                ctx.moveTo(cx - 55, 90); ctx.lineTo(cx - 25, 90);
+                ctx.moveTo(cx + 55, 90); ctx.lineTo(cx + 25, 90);
             }
             ctx.stroke();
             // Boca
             ctx.beginPath();
             if (bocaAbierta) {
-                ctx.ellipse(150, 200, 20, 10, 0, 0, Math.PI * 2);
+                ctx.ellipse(cx, 190, 18, 9, 0, 0, Math.PI * 2);
             } else {
                 if (sentimiento === 'positivo') {
-                    ctx.arc(150, 200, 30, 0, Math.PI, false);
+                    ctx.arc(cx, 190, 28, 0, Math.PI, false);
                 } else if (sentimiento === 'negativo') {
-                    ctx.arc(150, 220, 30, Math.PI, 2*Math.PI, false);
+                    ctx.arc(cx, 210, 28, Math.PI, 2 * Math.PI, false);
                 } else if (sentimiento === 'sorpresa') {
-                    ctx.arc(150, 205, 15, 0, Math.PI * 2); // boca redonda
+                    ctx.arc(cx, 195, 14, 0, Math.PI * 2);
                 } else if (sentimiento === 'enfado') {
-                    ctx.moveTo(120, 200); ctx.lineTo(180, 200); // línea recta apretada
+                    ctx.moveTo(cx - 30, 190); ctx.lineTo(cx + 30, 190);
                 } else {
-                    ctx.moveTo(120, 200); ctx.lineTo(180, 200);
+                    ctx.moveTo(cx - 30, 190); ctx.lineTo(cx + 30, 190);
                 }
             }
             ctx.stroke();
-            // Pupilas simples (opcional)
+            // Pupilas
             ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(110, 120, 3, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(190, 120, 3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx - 40, 110, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx + 40, 110, 3, 0, Math.PI * 2); ctx.fill();
 
-            // ====== MARCA DE AGUA ÉTICA INCRUSTADA EN EL FOTOGRAMA ======
-            ctx.font = '12px sans-serif';
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
-            ctx.fillText('🤖 IA', 5, 20);   // esquina superior izquierda
-            // ===========================================================
+            // Marca de agua ética INCRUSTADA
+            ctx.font = '10px sans-serif';
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+            ctx.fillText('🤖 IA', 8, 20);
+        }
+
+        function crearUtterance(texto, emocion) {
+            const utterance = new SpeechSynthesisUtterance(texto);
+            // Aplicar modulación emocional más marcada
+            let rate = config.rate;
+            let pitch = config.pitch;
+            switch (emocion) {
+                case 'positivo':
+                    pitch *= 1.4;   // más agudo
+                    rate *= 1.25;   // más rápido
+                    break;
+                case 'negativo':
+                    pitch *= 0.7;   // más grave
+                    rate *= 0.8;    // más lento
+                    break;
+                case 'sorpresa':
+                    pitch *= 1.6;   // muy agudo
+                    rate *= 1.4;    // muy rápido
+                    break;
+                case 'enfado':
+                    pitch *= 0.8;   // grave tenso
+                    rate *= 1.3;    // rápido
+                    break;
+                // neutro se queda con los valores base
+            }
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            if (config.voz) utterance.voice = config.voz;
+            return utterance;
         }
 
         function hablarCaritas() {
             const texto = document.getElementById('texto').value.trim();
-            if (texto === '') return;
+            if (texto === '' || narrando) return;
+            speechSynthesis.cancel();
             sentimiento = analizarSentimiento(texto);
-            const utterance = new SpeechSynthesisUtterance(texto);
-            utterance.rate = config.rate;
-            utterance.pitch = config.pitch;
+            const utterance = crearUtterance(texto, sentimiento);
 
             let intervalo;
             utterance.onstart = () => {
@@ -182,26 +215,116 @@
             speechSynthesis.speak(utterance);
         }
 
-        function setEmocionManual(emocion) {
+        // ====================== NARRADOR LARGO ======================
+        function narrarTexto() {
+            const textoCompleto = document.getElementById('texto').value.trim();
+            if (textoCompleto === '' || narrando) return;
+
+            // Trocear por puntuación manteniendo los delimitadores
+            const fragmentos = textoCompleto.match(/[^.!?¡¿]+[.!?¡¿]*/g) || [textoCompleto];
+            listaFragmentos = fragmentos.map(f => f.trim()).filter(f => f !== '');
+            if (listaFragmentos.length === 0) return;
+
+            indiceFragmentoActual = 0;
+            narrando = true;
+            document.getElementById('btnHablar').disabled = true;
+            document.getElementById('btnNarrar').disabled = true;
+            document.getElementById('btnParar').style.display = 'inline-block';
+            narrarSiguienteFragmento();
+        }
+
+        function narrarSiguienteFragmento() {
+            if (!narrando || indiceFragmentoActual >= listaFragmentos.length) {
+                finalizarNarracion();
+                return;
+            }
+            const fragmento = listaFragmentos[indiceFragmentoActual];
+            sentimiento = analizarSentimiento(fragmento);
+            const utterance = crearUtterance(fragmento, sentimiento);
+
+            let intervalo;
+            utterance.onstart = () => {
+                intervalo = setInterval(() => {
+                    bocaAbierta = !bocaAbierta;
+                    dibujarCara();
+                }, 120);
+            };
+            utterance.onend = () => {
+                clearInterval(intervalo);
+                bocaAbierta = false;
+                dibujarCara();
+                indiceFragmentoActual++;
+                narrarSiguienteFragmento(); // siguiente fragmento
+            };
+            dibujarCara();
+            speechSynthesis.speak(utterance);
+        }
+
+        function pararNarracion() {
+            speechSynthesis.cancel();
+            finalizarNarracion();
+        }
+
+        function finalizarNarracion() {
+            narrando = false;
+            bocaAbierta = false;
+            dibujarCara();
+            document.getElementById('btnHablar').disabled = false;
+            document.getElementById('btnNarrar').disabled = false;
+            document.getElementById('btnParar').style.display = 'none';
+        }
+
+        // ====================== EMOCIONES MANUALES ======================
+        function setEmocionManual(emocion, element) {
             emocionManual = emocion;
             const botones = document.querySelectorAll('.emotion-btns button');
             botones.forEach(b => b.style.background = '#4a4a8a');
-            event.target.style.background = '#8a4a8a';
+            if (element) element.style.background = '#8a4a8a';
+        }
+
+        // ====================== CONFIGURACIÓN ======================
+        function cargarVoces() {
+            const selector = document.getElementById('selectorVoces');
+            selector.innerHTML = '';
+            const voces = speechSynthesis.getVoices();
+            // Filtramos solo español por comodidad, si no hay, todas
+            const vocesFiltradas = voces.filter(v => v.lang.startsWith('es')) || voces;
+            (vocesFiltradas.length ? vocesFiltradas : voces).forEach(voz => {
+                const option = document.createElement('option');
+                option.value = voz.name;
+                option.textContent = `${voz.name} (${voz.lang})`;
+                selector.appendChild(option);
+            });
+            if (config.voz) {
+                const index = [...selector.options].findIndex(opt => opt.value === config.voz.name);
+                if (index >= 0) selector.selectedIndex = index;
+            }
         }
 
         function guardarConfig() {
             config.rate = parseFloat(document.getElementById('rate').value);
             config.pitch = parseFloat(document.getElementById('pitch').value);
             config.umbralPositivo = parseInt(document.getElementById('umbralPos').value);
+            const selector = document.getElementById('selectorVoces');
+            const nombreVoz = selector.value;
+            const voces = speechSynthesis.getVoices();
+            config.voz = voces.find(v => v.name === nombreVoz) || null;
             alert('Configuración guardada.');
         }
 
-        // Al cargar: dibujar cara inicial, ocultar aviso tras 8 segundos
+        // ====================== INICIALIZACIÓN ======================
         window.onload = () => {
+            const ancho = Math.min(window.innerWidth * 0.9, 280);
+            canvas.width = ancho;
+            canvas.height = ancho;
             dibujarCara();
             document.getElementById('rate').value = config.rate;
             document.getElementById('pitch').value = config.pitch;
             document.getElementById('umbralPos').value = config.umbralPositivo;
+
+            // Cargar voces (pueden cargar async)
+            cargarVoces();
+            speechSynthesis.onvoiceschanged = cargarVoces;
 
             const aviso = document.getElementById('aviso-unico');
             if (aviso) {
