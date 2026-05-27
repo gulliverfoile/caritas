@@ -1,0 +1,58 @@
+# 😸 caritas – Comunicador emocional para personas con dificultades de habla
+
+**caritas** es una herramienta ligera, gratuita y ética que convierte texto en voz y expresión facial. Está pensada especialmente para personas que no pueden hablar o tienen dificultades para hacerlo, aunque puede usarla cualquiera.
+
+## ¿Qué hace?
+
+- Escribes (o pegas) un mensaje y un avatar con rostro animado lo **dice con voz sintética**, moviendo los labios.
+- La **cara refleja la emoción** del mensaje (alegría, tristeza, sorpresa, enfado...) de forma automática, o puedes elegir la emoción manualmente.
+- Puedes **narrar textos largos** (libros, noticias, cartas) troceándolos en frases y cambiando la expresión en cada una.
+- Incluye **frases rápidas personalizables** para situaciones cotidianas (saludos, pedir ayuda, necesidades básicas).
+- Funciona **sin internet** y desde un solo archivo HTML; no necesita instalación ni permisos especiales.
+
+## ¿Por qué es útil para alguien que no puede hablar?
+
+Porque **devuelve la expresividad a la comunicación**. Muchas aplicaciones de voz sintética hablan de forma plana, sin emociones. **caritas** intenta que el mensaje no solo se oiga, sino que también **se vea cómo se siente** quien lo envía. Esto ayuda mucho a que el interlocutor entienda el tono real (si es una urgencia, una broma, un agradecimiento...).
+
+Además, los botones de frases rápidas permiten **comunicarse sin escribir** cada vez, algo esencial si la movilidad es reducida o se necesita responder rápido.
+
+## Características principales
+
+- 🎤 **Voz sintética modulada por emoción** (más aguda y rápida para alegría, grave y lenta para tristeza, etc.).
+- 😊 **Emociones manuales o automáticas** según el texto.
+- 💬 **Panel de frases rápidas** editable, guardado en el navegador.
+- 🎨 **Skins (pieles) del avatar**: clásico, gatito, robot, amigable.
+- 🗣️ **Estilos de voz**: normal, duendecillo, abuelito, robot, susurro.
+- 👁️ **Modo "solo cara"** que muestra la expresión sin voz (para enseñar la pantalla a alguien cercano).
+- 🛡️ **Aviso ético** y marca de agua "🤖 IA" permanente para que nunca se confunda con una persona real.
+- 📱 **Funciona en móviles y ordenadores** (abrir con Chrome, Firefox, Edge…).
+
+## Cómo usarlo
+
+1. Abre el archivo `caritas.html` en tu navegador (no hace falta servidor).
+2. Escribe o pega un texto en el campo.
+3. Opcionalmente, elige una emoción con los botones inferiores (😊😢😐😮😠), o deja "Auto" para que el sistema detecte el sentimiento.
+4. Pulsa **Hablar** (frase corta) o **Narrar** (texto largo).
+5. Usa la barra inferior para cambiar entre la pantalla del avatar, el panel de frases rápidas y los ajustes de voz/apariencia.
+
+## Sin dependencias, sin rastreo, sin servidores
+
+Todo el procesamiento ocurre dentro de tu dispositivo. No se envía ningún dato a ningún sitio. La síntesis de voz usa el motor del sistema operativo (no consume datos). Puedes usar **caritas** completamente offline.
+
+## Licencia y ética
+
+Este proyecto se distribuye bajo licencia **AGPLv3**, que garantiza que cualquier modificación o mejora debe permanecer libre y abierta.
+
+La marca de agua y el aviso inicial recuerdan que la voz y el rostro son generados artificialmente. **No está permitido usarlo para suplantar a personas reales o engañar a otros.**
+
+## Para quién es
+
+- Personas con dificultades de habla (temporales o permanentes).
+- Profesionales de logopedia, educación especial o asistencia.
+- Cualquiera que quiera experimentar con la expresividad sintética de forma transparente.
+
+---
+
+**caritas** nació de una conversación sobre ética, tecnología ligera y la necesidad de herramientas accesibles. No pretende ser perfecto, sino útil, modificable y respetuoso.
+
+*"Si un texto puede hablar, que también sepa cómo se siente."*
