@@ -3,429 +3,769 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>caritas – avatar facial reactivo ético</title>
+    <title>caritas – comunicador aumentativo ético</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: sans-serif; background: #1e1e2f; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 0.5rem; margin: 0; min-height: 100vh; }
-        h2 { margin: 0.5rem 0 0; }
-        p { margin: 0.2rem 0 0.5rem; font-size: 0.9rem; }
+        body { font-family: sans-serif; background: #1e1e2f; color: #e0e0e0; margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #app { width: 100%; max-width: 420px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .pantalla { display: none; flex-direction: column; align-items: center; padding: 0.5rem; flex: 1; overflow-y: auto; }
+        .pantalla.activa { display: flex; }
         canvas { border: 1px solid #444; border-radius: 50%; background: #2a2a3c; margin: 0.5rem 0; max-width: 100%; height: auto; }
-        textarea { width: 100%; max-width: 400px; padding: 0.5rem; border-radius: 8px; border: none; background: #333; color: white; resize: vertical; font-size: 1rem; }
-        .buttons { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; margin: 0.4rem 0; }
-        button { padding: 0.7rem 1.4rem; border: none; border-radius: 24px; background: #4a4a8a; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1rem; min-width: 44px; min-height: 44px; }
+        textarea { width: 100%; max-width: 100%; padding: 0.5rem; border-radius: 8px; border: none; background: #333; color: white; resize: vertical; font-size: 1rem; margin-bottom: 0.5rem; }
+        .buttons { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; margin: 0.3rem 0; }
+        button { padding: 0.7rem 1.2rem; border: none; border-radius: 24px; background: #4a4a8a; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 0.95rem; min-width: 44px; min-height: 44px; }
         button:hover { background: #6a6aaa; }
         button:disabled { opacity: 0.5; pointer-events: none; }
-        .emotion-btns button { font-size: 1.8rem; padding: 0.3rem 0.7rem; border-radius: 50%; min-width: 48px; min-height: 48px; }
+        .emotion-btns button { font-size: 1.7rem; padding: 0.3rem 0.7rem; border-radius: 50%; min-width: 46px; min-height: 46px; }
         #btnParar { background: #8a4a4a; }
-        #btnParar:hover { background: #aa6a6a; }
-        .config-panel { background: #2a2a3c; padding: 0.8rem; border-radius: 12px; margin-top: 0.5rem; max-width: 400px; width: 100%; }
-        .config-panel label { display: block; margin: 0.4rem 0; font-size: 0.9rem; }
-        .config-panel input[type=range], .config-panel select { width: 100%; }
-        summary { cursor: pointer; margin-bottom: 0.5rem; }
-        #aviso-unico { background: #3a3a5a; padding: 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: center; font-size: 0.8rem; color: #ccc; }
+        .barra-inferior { display: flex; justify-content: space-around; background: #2a2a3c; padding: 0.5rem; border-top: 1px solid #444; }
+        .barra-inferior button { font-size: 1.3rem; padding: 0.5rem; background: transparent; color: #ccc; flex: 1; }
+        .barra-inferior button.activo { color: #00ffff; background: #3a3a5a; }
+        .lista-frases { width: 100%; display: flex; flex-direction: column; gap: 0.4rem; }
+        .frase-item { display: flex; gap: 0.3rem; align-items: center; background: #2a2a3c; padding: 0.4rem; border-radius: 8px; }
+        .frase-item button { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+        .frase-texto { flex: 1; word-break: break-word; }
+        .orden-frases { width: 100%; margin: 0.3rem 0; }
+        .orden-frases select { width: 100%; padding: 0.4rem; border-radius: 8px; background: #333; color: white; border: none; }
+        .panel-config { width: 100%; }
+        details { margin-bottom: 0.5rem; background: #2a2a3c; padding: 0.5rem; border-radius: 8px; }
+        summary { cursor: pointer; }
+        select, input[type=range] { width: 100%; margin: 0.3rem 0; }
+        .skins-preview { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .skin-opt { padding: 0.4rem 0.8rem; background: #3a3a5a; border-radius: 12px; cursor: pointer; font-size: 0.9rem; }
+        .skin-opt.seleccionado { background: #00aaaa; color: #000; }
+        #aviso-unico { background: #3a3a5a; padding: 0.5rem; border-radius: 8px; margin: 0.2rem 0; text-align: center; font-size: 0.8rem; color: #ccc; }
+        .ayuda-voz { font-size: 0.85rem; margin-top: 0.5rem; }
+        .ayuda-voz a { color: #00cccc; text-decoration: none; }
+        dialog { background: #2a2a3c; color: #e0e0e0; border: 1px solid #444; border-radius: 12px; padding: 1rem; max-width: 90%; }
+        dialog::backdrop { background: rgba(0,0,0,0.7); }
+        dialog button { margin-top: 1rem; }
         @media (max-width: 400px) {
-            .emotion-btns button { font-size: 1.5rem; min-width: 40px; min-height: 40px; }
+            .emotion-btns button { font-size: 1.5rem; min-width: 38px; min-height: 38px; }
         }
     </style>
 </head>
 <body>
-    <h2>😸 caritas</h2>
-    <p>Avatar que habla con tu tono</p>
-
-    <div id="aviso-unico">Este asistente genera voz y expresión sintética. No es una persona real.</div>
-
-    <canvas id="cara" width="280" height="280"></canvas>
-
-    <textarea id="texto" rows="4" placeholder="Escribe o pega texto...">Hola, me siento genial hoy.</textarea>
-
-    <div class="buttons">
-        <button id="btnHablar" onclick="hablarCaritas()">🗣️ Hablar</button>
-        <button id="btnNarrar" onclick="narrarTexto()">📖 Narrar</button>
-        <button id="btnParar" onclick="pararNarracion()" style="display:none;">⏹️ Parar</button>
+<div id="app">
+    <!-- Pantalla Avatar -->
+    <div id="pantalla-avatar" class="pantalla activa">
+        <h2>😸 caritas</h2>
+        <div id="aviso-unico">Este asistente genera voz y expresión sintética. No es una persona real.</div>
+        <canvas id="cara" width="280" height="280"></canvas>
+        <textarea id="texto" rows="3" placeholder="Escribe o pega texto...">Hola, no estoy muy feliz, pero tampoco estoy triste.</textarea>
+        <div class="buttons">
+            <button id="btnHablar">🗣️ Hablar</button>
+            <button id="btnNarrar">📖 Narrar</button>
+            <button id="btnParar" style="display:none;">⏹️ Parar</button>
+        </div>
+        <div class="buttons emotion-btns" id="emocionesManuales">
+            <button data-emocion="positivo" title="Alegre">😊</button>
+            <button data-emocion="negativo" title="Triste">😢</button>
+            <button data-emocion="neutro" title="Neutro">😐</button>
+            <button data-emocion="sorpresa" title="Sorpresa">😮</button>
+            <button data-emocion="enfado" title="Enfado">😠</button>
+            <button data-emocion="automatico" title="Automático">🤖 Auto</button>
+        </div>
     </div>
 
-    <div class="buttons emotion-btns" id="emocionesManuales">
-        <button onclick="setEmocionManual('positivo', this)" title="Alegre">😊</button>
-        <button onclick="setEmocionManual('negativo', this)" title="Triste">😢</button>
-        <button onclick="setEmocionManual('neutro', this)" title="Neutro">😐</button>
-        <button onclick="setEmocionManual('sorpresa', this)" title="Sorpresa">😮</button>
-        <button onclick="setEmocionManual('enfado', this)" title="Enfado">😠</button>
-        <button onclick="setEmocionManual('automatico', this)" title="Automático">🤖 Auto</button>
+    <!-- Pantalla Frases -->
+    <div id="pantalla-frases" class="pantalla">
+        <h3>💬 Mis frases</h3>
+        <div class="orden-frases">
+            <select id="ordenFrases">
+                <option value="manual">Manual</option>
+                <option value="frecuencia">Más usadas</option>
+                <option value="alfabetico">Alfabético</option>
+                <option value="reciente">Recientes</option>
+            </select>
+        </div>
+        <div class="buttons">
+            <button id="btnNuevaFrase">➕ Nueva</button>
+            <button id="btnSoloCara" style="background:#555;">👁️ Solo cara: OFF</button>
+        </div>
+        <div class="lista-frases" id="listaFrases"></div>
     </div>
 
-    <details class="config-panel">
-        <summary>⚙️ Configuración</summary>
-        <label>Velocidad base: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"></label>
-        <label>Tono base (pitch): <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1"></label>
-        <label>Umbral sentimiento (+): <input type="range" id="umbralPos" min="0" max="5" value="1"></label>
-        <label>Voz: <select id="selectorVoces"></select></label>
-        <button onclick="guardarConfig()">Guardar</button>
-    </details>
+    <!-- Pantalla Ajustes -->
+    <div id="pantalla-ajustes" class="pantalla">
+        <h3>⚙️ Ajustes</h3>
+        <div class="panel-config">
+            <details>
+                <summary>🎤 Voz y velocidad</summary>
+                <label>Velocidad base: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"></label>
+                <label>Tono base: <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1"></label>
+                <label>Estilo de voz:
+                    <select id="estiloVoz">
+                        <option value="normal">Normal</option>
+                        <option value="duendecillo">Duendecillo</option>
+                        <option value="abuelito">Abuelito</option>
+                        <option value="robot">Robot</option>
+                        <option value="susurro">Susurro</option>
+                    </select>
+                </label>
+                <label>Voz del sistema: <select id="selectorVoces"></select></label>
+                <div class="ayuda-voz">
+                    <a href="#" id="mostrarAyudaVoz">📖 ¿Tu voz suena robótica? Cómo mejorarla</a>
+                </div>
+            </details>
+            <details>
+                <summary>🌐 Idioma del análisis</summary>
+                <label>Idioma para detectar emociones:
+                    <select id="idiomaSelector">
+                        <option value="es">Español</option>
+                        <option value="en">English (básico)</option>
+                    </select>
+                </label>
+                <p style="font-size:0.8rem;color:#aaa;">El análisis de sentimiento funciona mejor en español.</p>
+            </details>
+            <details>
+                <summary>🎨 Apariencia</summary>
+                <div class="skins-preview" id="skinsPreview"></div>
+            </details>
+            <button id="btnGuardarConfig">Guardar configuración</button>
+        </div>
+    </div>
 
-    <script>
-        // ====================== ESTADO GLOBAL ======================
-        const canvas = document.getElementById('cara');
-        const ctx = canvas.getContext('2d');
+    <!-- Barra inferior de navegación -->
+    <div class="barra-inferior">
+        <button data-pantalla="pantalla-avatar" class="activo">🏠</button>
+        <button data-pantalla="pantalla-frases">💬</button>
+        <button data-pantalla="pantalla-ajustes">⚙️</button>
+    </div>
+</div>
 
-        // Configuración
-        let config = { rate: 1.0, pitch: 1.0, umbralPositivo: 1, voz: null };
+<!-- Modal de ayuda de voz -->
+<dialog id="ayudaVozDialog">
+    <p><strong>¿Cómo conseguir una voz más natural?</strong></p>
+    <p>La calidad depende de las voces instaladas en tu dispositivo.</p>
+    <p><strong>Android:</strong> Instala <em>Google Text-to-Speech</em> desde Play Store. Luego ve a Ajustes → Idioma y entrada → Salida de texto a voz → Motor de Google, y descarga voces en español.</p>
+    <p><strong>iOS:</strong> Ve a Ajustes → Accesibilidad → Contenido leído → Voces → Español. Descarga una voz mejorada (Mónica, Jorge, etc.).</p>
+    <p>Después, vuelve a esta pantalla y selecciona una voz que contenga "Google", "Mónica" o similar, marcada con ✅.</p>
+    <button id="cerrarAyudaVoz">Entendido</button>
+</dialog>
 
-        // Emoción manual / automática
-        let emocionManual = 'automatico';
+<script>
+    // ====================== EVENT BUS (Flujo de eventos) ======================
+    // Permite que distintas partes de la app se comuniquen sin depender unas de otras.
+    // Los eventos fluyen de quien emite a quien escucha.
+    const EventBus = {
+        listeners: {},
+        on(event, callback) { (this.listeners[event] = this.listeners[event] || []).push(callback); },
+        emit(event, data) { (this.listeners[event] || []).forEach(cb => cb(data)); }
+    };
 
-        // Narración
-        let narrando = false;
-        let listaFragmentos = [];
-        let indiceFragmentoActual = 0;
+    // ====================== STORAGE (Persistencia) ======================
+    const Storage = {
+        guardar(clave, valor) { try { localStorage.setItem('caritas_'+clave, JSON.stringify(valor)); } catch(e){} },
+        cargar(clave, defecto) { try { const v = localStorage.getItem('caritas_'+clave); return v ? JSON.parse(v) : defecto; } catch(e){ return defecto; } }
+    };
 
-        // Transición suave de expresión
-        let emocionActual = 'neutro';      // lo que se está mostrando
-        let emocionObjetivo = 'neutro';    // a lo que se quiere llegar
-        let tiempoInicioTransicion = 0;
-        const DURACION_TRANSICION = 250;   // ms
+    // ====================== ESTADO GLOBAL (Núcleo de la aplicación) ======================
+    const state = {
+        emocionManual: 'automatico',
+        narrando: false,
+        soloCara: false,
+        listaFragmentos: [],
+        indiceFragmento: 0,
+        emocionActual: 'neutro',
+        emocionObjetivo: 'neutro',
+        tiempoTransicion: 0,
+        bocaAbierta: false,
+        config: Storage.cargar('config', {
+            rate: 1.0, pitch: 1.0, vozNombre: null, estiloVoz: 'normal', skin: 'clasico', idioma: 'es'
+        }),
+        frases: Storage.cargar('frases', [
+            { id: 'f1', texto: 'Hola, ¿cómo estás?', emocion: 'positivo', usos: 0, fechaUltimoUso: null },
+            { id: 'f2', texto: 'Necesito ayuda, por favor.', emocion: 'negativo', usos: 0, fechaUltimoUso: null },
+            { id: 'f3', texto: 'Tengo sed.', emocion: 'neutro', usos: 0, fechaUltimoUso: null }
+        ]),
+        ordenFrases: Storage.cargar('ordenFrases', 'manual'),
+        // El diccionario activo fluye desde los DICCIONARIOS según el idioma configurado
+        diccionario: null  // Se asigna en la inicialización
+    };
+    const DURACION_TRANSICION = 250; // ms
 
-        // Boca hablando
-        let bocaAbierta = false;
+    // ====================== DICCIONARIOS DE EMOCIONES (por idioma) ======================
+    // Cada palabra tiene un vector { positivo, negativo, sorpresa, enfado, neutro }
+    // El motor de análisis usará state.diccionario, que apunta al idioma activo.
+    const DICCIONARIOS = {
+        es: {
+            // Positivo
+            'genial':       { positivo: 0.9, negativo: 0.0, sorpresa: 0.3, enfado: 0.0, neutro: 0.1 },
+            'bien':         { positivo: 0.7, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.3 },
+            'feliz':        { positivo: 0.9, negativo: 0.0, sorpresa: 0.1, enfado: 0.0, neutro: 0.0 },
+            'alegre':       { positivo: 0.8, negativo: 0.0, sorpresa: 0.2, enfado: 0.0, neutro: 0.1 },
+            'contento':     { positivo: 0.7, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.2 },
+            'maravilloso':  { positivo: 1.0, negativo: 0.0, sorpresa: 0.5, enfado: 0.0, neutro: 0.0 },
+            'estupendo':    { positivo: 0.9, negativo: 0.0, sorpresa: 0.3, enfado: 0.0, neutro: 0.0 },
+            'fantástico':   { positivo: 1.0, negativo: 0.0, sorpresa: 0.4, enfado: 0.0, neutro: 0.0 },
+            'gracias':      { positivo: 0.6, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.4 },
+            'amor':         { positivo: 1.0, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.0 },
+            'cariño':       { positivo: 0.8, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.2 },
+            'esperanza':    { positivo: 0.7, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.3 },
+            'alivio':       { positivo: 0.6, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.4 },
+            'risa':         { positivo: 0.8, negativo: 0.0, sorpresa: 0.3, enfado: 0.0, neutro: 0.0 },
+            // Negativo
+            'triste':       { positivo: 0.0, negativo: 0.9, sorpresa: 0.0, enfado: 0.0, neutro: 0.1 },
+            'mal':          { positivo: 0.0, negativo: 0.7, sorpresa: 0.0, enfado: 0.2, neutro: 0.1 },
+            'peor':         { positivo: 0.0, negativo: 0.9, sorpresa: 0.0, enfado: 0.1, neutro: 0.0 },
+            'odio':         { positivo: 0.0, negativo: 0.8, sorpresa: 0.0, enfado: 0.5, neutro: 0.0 },
+            'horrible':     { positivo: 0.0, negativo: 0.9, sorpresa: 0.1, enfado: 0.0, neutro: 0.0 },
+            'pena':         { positivo: 0.0, negativo: 0.8, sorpresa: 0.0, enfado: 0.0, neutro: 0.2 },
+            'fatal':        { positivo: 0.0, negativo: 0.9, sorpresa: 0.0, enfado: 0.1, neutro: 0.0 },
+            'terrible':     { positivo: 0.0, negativo: 0.9, sorpresa: 0.1, enfado: 0.0, neutro: 0.0 },
+            'asco':         { positivo: 0.0, negativo: 0.8, sorpresa: 0.2, enfado: 0.0, neutro: 0.0 },
+            'deprimido':    { positivo: 0.0, negativo: 1.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.0 },
+            'solo':         { positivo: 0.0, negativo: 0.7, sorpresa: 0.0, enfado: 0.0, neutro: 0.3 },
+            'angustia':     { positivo: 0.0, negativo: 0.9, sorpresa: 0.0, enfado: 0.1, neutro: 0.0 },
+            'llorar':       { positivo: 0.0, negativo: 0.9, sorpresa: 0.0, enfado: 0.0, neutro: 0.1 },
+            // Sorpresa
+            'sorpresa':     { positivo: 0.2, negativo: 0.0, sorpresa: 0.9, enfado: 0.0, neutro: 0.1 },
+            'increíble':    { positivo: 0.4, negativo: 0.0, sorpresa: 0.8, enfado: 0.0, neutro: 0.0 },
+            'guau':         { positivo: 0.3, negativo: 0.0, sorpresa: 0.9, enfado: 0.0, neutro: 0.0 },
+            'vaya':         { positivo: 0.0, negativo: 0.2, sorpresa: 0.7, enfado: 0.0, neutro: 0.1 },
+            'ostras':       { positivo: 0.0, negativo: 0.0, sorpresa: 0.8, enfado: 0.0, neutro: 0.2 },
+            'asombroso':    { positivo: 0.5, negativo: 0.0, sorpresa: 0.9, enfado: 0.0, neutro: 0.0 },
+            'flipante':     { positivo: 0.5, negativo: 0.0, sorpresa: 0.9, enfado: 0.0, neutro: 0.0 },
+            'alucinante':   { positivo: 0.6, negativo: 0.0, sorpresa: 0.8, enfado: 0.0, neutro: 0.0 },
+            // Enfado
+            'enfadado':     { positivo: 0.0, negativo: 0.5, sorpresa: 0.0, enfado: 0.9, neutro: 0.0 },
+            'furioso':      { positivo: 0.0, negativo: 0.6, sorpresa: 0.0, enfado: 1.0, neutro: 0.0 },
+            'rabia':        { positivo: 0.0, negativo: 0.5, sorpresa: 0.0, enfado: 0.9, neutro: 0.0 },
+            'cabreado':     { positivo: 0.0, negativo: 0.5, sorpresa: 0.0, enfado: 0.9, neutro: 0.0 },
+            'indignado':    { positivo: 0.0, negativo: 0.4, sorpresa: 0.1, enfado: 0.8, neutro: 0.0 },
+            'irritado':     { positivo: 0.0, negativo: 0.4, sorpresa: 0.0, enfado: 0.8, neutro: 0.0 },
+            'molesto':      { positivo: 0.0, negativo: 0.3, sorpresa: 0.0, enfado: 0.7, neutro: 0.2 },
+            'fastidio':     { positivo: 0.0, negativo: 0.3, sorpresa: 0.0, enfado: 0.6, neutro: 0.2 },
+            // Neutro
+            'hola':         { positivo: 0.1, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.9 },
+            'adiós':        { positivo: 0.0, negativo: 0.1, sorpresa: 0.0, enfado: 0.0, neutro: 0.8 },
+            'mañana':       { positivo: 0.0, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 1.0 },
+            'hoy':          { positivo: 0.0, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 1.0 },
+            'noche':        { positivo: 0.0, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 1.0 },
+        },
+        en: {
+            // Positive
+            'great':        { positivo: 0.9, negativo: 0.0, sorpresa: 0.3, enfado: 0.0, neutro: 0.1 },
+            'good':         { positivo: 0.7, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.3 },
+            'happy':        { positivo: 0.9, negativo: 0.0, sorpresa: 0.1, enfado: 0.0, neutro: 0.0 },
+            'wonderful':    { positivo: 1.0, negativo: 0.0, sorpresa: 0.5, enfado: 0.0, neutro: 0.0 },
+            'love':         { positivo: 1.0, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.0 },
+            'thanks':       { positivo: 0.6, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.4 },
+            // Negative
+            'sad':          { positivo: 0.0, negativo: 0.9, sorpresa: 0.0, enfado: 0.0, neutro: 0.1 },
+            'bad':          { positivo: 0.0, negativo: 0.7, sorpresa: 0.0, enfado: 0.2, neutro: 0.1 },
+            'hate':         { positivo: 0.0, negativo: 0.8, sorpresa: 0.0, enfado: 0.5, neutro: 0.0 },
+            'terrible':     { positivo: 0.0, negativo: 0.9, sorpresa: 0.1, enfado: 0.0, neutro: 0.0 },
+            // Surprise
+            'surprise':     { positivo: 0.2, negativo: 0.0, sorpresa: 0.9, enfado: 0.0, neutro: 0.1 },
+            'incredible':   { positivo: 0.4, negativo: 0.0, sorpresa: 0.8, enfado: 0.0, neutro: 0.0 },
+            'wow':          { positivo: 0.3, negativo: 0.0, sorpresa: 0.9, enfado: 0.0, neutro: 0.0 },
+            // Anger
+            'angry':        { positivo: 0.0, negativo: 0.5, sorpresa: 0.0, enfado: 0.9, neutro: 0.0 },
+            'furious':      { positivo: 0.0, negativo: 0.6, sorpresa: 0.0, enfado: 1.0, neutro: 0.0 },
+            // Neutral
+            'hello':        { positivo: 0.1, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.9 },
+            'bye':          { positivo: 0.0, negativo: 0.1, sorpresa: 0.0, enfado: 0.0, neutro: 0.8 },
+        }
+    };
 
-        // ====================== LÉXICO PONDERADO ======================
-        const lexicon = {
-            'genial':     { tipo: 'positivo', peso: 2 },
-            'bien':       { tipo: 'positivo', peso: 1 },
-            'feliz':      { tipo: 'positivo', peso: 2 },
-            'alegre':     { tipo: 'positivo', peso: 2 },
-            'amor':       { tipo: 'positivo', peso: 2 },
-            'gracias':    { tipo: 'positivo', peso: 1 },
-            'maravilloso':{ tipo: 'positivo', peso: 3 },
-            'estupendo':  { tipo: 'positivo', peso: 2 },
-            'fantástico': { tipo: 'positivo', peso: 2 },
-            'triste':     { tipo: 'negativo', peso: 2 },
-            'mal':        { tipo: 'negativo', peso: 1 },
-            'peor':       { tipo: 'negativo', peso: 2 },
-            'odio':       { tipo: 'negativo', peso: 3 },
-            'horrible':   { tipo: 'negativo', peso: 3 },
-            'pena':       { tipo: 'negativo', peso: 2 },
-            'fatal':      { tipo: 'negativo', peso: 2 },
-            'terrible':   { tipo: 'negativo', peso: 2 },
-            'asco':       { tipo: 'negativo', peso: 2 },
-            'sorpresa':   { tipo: 'sorpresa', peso: 1 },
-            'increíble':  { tipo: 'sorpresa', peso: 2 },
-            'guau':       { tipo: 'sorpresa', peso: 2 },
-            'vaya':       { tipo: 'sorpresa', peso: 1 },
-            'ostras':     { tipo: 'sorpresa', peso: 1 },
-            'asombroso':  { tipo: 'sorpresa', peso: 2 },
-            'enfadado':   { tipo: 'enfado',   peso: 2 },
-            'furioso':    { tipo: 'enfado',   peso: 3 },
-            'rabia':      { tipo: 'enfado',   peso: 2 },
-            'cabreado':   { tipo: 'enfado',   peso: 2 },
-            'indignado':  { tipo: 'enfado',   peso: 2 },
-        };
+    // Negaciones e intensificadores comunes (independientes del idioma, se pueden ampliar)
+    const negaciones = ['no','nunca','jamás','sin','tampoco','ni','nadie','not','never','without','neither','nor'];
+    const intensificadores = { 'muy': 2.0, 'extremadamente': 3.0, 'mucho': 2.0, 'poco': 0.5, 'algo': 0.7, 'bastante': 1.5,
+                               'very': 2.0, 'extremely': 3.0, 'a lot': 2.0, 'little': 0.5, 'somewhat': 0.7, 'quite': 1.5 };
 
-        // ====================== ANÁLISIS DE SENTIMIENTO ======================
-        function analizarSentimiento(texto) {
-            if (emocionManual !== 'automatico') return emocionManual;
+    /**
+     * Motor de análisis de sentimiento.
+     * Recibe un texto y utiliza el diccionario activo (state.diccionario) para calcular un vector emocional.
+     * Luego elige la emoción con mayor puntuación.
+     * Flujo: state.diccionario -> motor -> emoción resultante.
+     */
+    function analizarSentimiento(texto) {
+        if (state.emocionManual !== 'automatico') return state.emocionManual;
+        const dic = state.diccionario;
+        if (!dic) return 'neutro';  // Si no hay diccionario, neutro por defecto
 
-            let puntuaciones = { positivo: 0, negativo: 0, sorpresa: 0, enfado: 0 };
-            const tokens = texto.toLowerCase().split(/[^a-záéíóúüñ]+/);
-            const tokensOriginales = texto.split(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]+/); // para detectar mayúsculas
+        const acum = { positivo: 0.0, negativo: 0.0, sorpresa: 0.0, enfado: 0.0, neutro: 0.0 };
+        const tokens = texto.toLowerCase().split(/[^a-záéíóúüñ]+/);
+        let negActiva = false;
+        let factor = 1.0;
 
-            tokens.forEach((token, idx) => {
-                if (lexicon[token]) {
-                    let peso = lexicon[token].peso;
-                    // Si la palabra original está en mayúsculas, aumentamos peso
-                    if (tokensOriginales[idx] && tokensOriginales[idx] === tokensOriginales[idx].toUpperCase() && tokensOriginales[idx].length > 1) {
-                        peso *= 1.5;
-                    }
-                    puntuaciones[lexicon[token].tipo] += peso;
+        tokens.forEach(token => {
+            if (negaciones.includes(token)) {
+                negActiva = true;
+                return;
+            }
+            if (intensificadores[token]) {
+                factor = intensificadores[token];
+                return;
+            }
+            if (dic[token]) {
+                const vec = dic[token];
+                const contrib = {
+                    positivo: vec.positivo * factor,
+                    negativo: vec.negativo * factor,
+                    sorpresa: vec.sorpresa * factor,
+                    enfado: vec.enfado * factor,
+                    neutro: vec.neutro * factor
+                };
+                if (negActiva) {
+                    // Invertir polaridad positivo/negativo
+                    const temp = contrib.positivo;
+                    contrib.positivo = contrib.negativo * 0.7;
+                    contrib.negativo = temp * 0.7;
+                    contrib.sorpresa *= 0.3;
+                    contrib.enfado *= 0.5;
+                    negActiva = false;
+                }
+                for (let e in acum) acum[e] += contrib[e];
+                factor = 1.0;
+            } else {
+                acum.neutro += 0.1;
+                negActiva = false;
+                factor = 1.0;
+            }
+        });
+
+        let maxEmocion = 'neutro';
+        let maxValor = 0.0;
+        for (let e in acum) {
+            if (acum[e] > maxValor) {
+                maxValor = acum[e];
+                maxEmocion = e;
+            }
+        }
+        return maxValor >= 0.2 ? maxEmocion : 'neutro';
+    }
+
+    // ====================== SKINS (Renderizado visual) ======================
+    const skins = {
+        clasico: { colorCabeza:'#2a2a3c', colorBorde:'#ccc', colorCejas:'#fff', orejas:null, accesorio:null },
+        gatito: { colorCabeza:'#3a3a4c', colorBorde:'#ffaa00', colorCejas:'#ffaa00', orejas:'gatito', accesorio:'bigotes' },
+        robot: { colorCabeza:'#4a4a5c', colorBorde:'#00ccff', colorCejas:'#00ccff', orejas:'antenas', accesorio:'panel' },
+        amigable: { colorCabeza:'#3a4a3a', colorBorde:'#aaffaa', colorCejas:'#aaffaa', orejas:null, accesorio:'rubor' }
+    };
+
+    let canvas, ctx;
+    function inicializarCanvas() {
+        canvas = document.getElementById('cara');
+        ctx = canvas.getContext('2d');
+        const ancho = Math.min(window.innerWidth * 0.85, 280);
+        canvas.width = ancho; canvas.height = ancho;
+    }
+
+    function dibujarCara() {
+        if (!ctx) return;
+        const skin = skins[state.config.skin] || skins.clasico;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width/2, cy = canvas.height/2;
+        const r = Math.min(canvas.width, canvas.height) * 0.38;
+
+        if (skin.orejas === 'gatito') {
+            ctx.fillStyle = skin.colorCabeza; ctx.strokeStyle = skin.colorBorde;
+            [-1,1].forEach(lado => {
+                ctx.beginPath(); ctx.arc(cx + lado*r*0.7, cy - r*0.85, r*0.25, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            });
+        } else if (skin.orejas === 'antenas') {
+            ctx.strokeStyle = skin.colorBorde;
+            [-1,1].forEach(lado => {
+                ctx.beginPath(); ctx.moveTo(cx + lado*r*0.5, cy - r*1.1); ctx.lineTo(cx + lado*r*0.6, cy - r*0.9);
+                ctx.stroke(); ctx.beginPath(); ctx.arc(cx + lado*r*0.5, cy - r*1.15, r*0.08, 0, Math.PI*2); ctx.stroke();
+            });
+        }
+
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.fillStyle = skin.colorCabeza; ctx.fill(); ctx.strokeStyle = skin.colorBorde; ctx.stroke();
+
+        if (skin.accesorio === 'bigotes') {
+            ctx.strokeStyle = '#fff';
+            [-1,1].forEach(lado => {
+                for (let i=-1; i<=1; i+=1) {
+                    ctx.beginPath(); ctx.moveTo(cx + lado*r*0.3, cy - r*0.1 + i*r*0.1);
+                    ctx.lineTo(cx + lado*r*0.8, cy - r*0.2 + i*r*0.15); ctx.stroke();
                 }
             });
+        }
+        if (skin.accesorio === 'rubor') {
+            [-1,1].forEach(lado => {
+                ctx.beginPath(); ctx.arc(cx + lado*r*0.55, cy + r*0.05, r*0.15, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,100,100,0.4)'; ctx.fill();
+            });
+        }
+        if (skin.accesorio === 'panel') {
+            ctx.fillStyle = '#00ccff33'; ctx.fillRect(cx - r*0.3, cy - r*0.2, r*0.6, r*0.4);
+        }
 
-            // Elegir la emoción con mayor puntuación (mínimo 1)
-            let maxTipo = 'neutro';
-            let maxPeso = 0;
-            for (let tipo in puntuaciones) {
-                if (puntuaciones[tipo] > maxPeso) {
-                    maxPeso = puntuaciones[tipo];
-                    maxTipo = tipo;
+        const emocion = state.emocionActual;
+        const ojoY = cy - r*0.55, ojoOffX = r*0.45, cejaY = ojoY - r*0.3;
+        const bocaY = cy + r*0.45, bocaAncho = r*0.45, bocaAlto = r*0.2;
+
+        ctx.strokeStyle = '#fff'; ctx.beginPath();
+        ctx.arc(cx - ojoOffX, ojoY, r*0.1, 0, Math.PI, false); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx + ojoOffX, ojoY, r*0.1, 0, Math.PI, false); ctx.stroke();
+
+        ctx.strokeStyle = skin.colorCejas; ctx.beginPath();
+        if (emocion === 'positivo') {
+            ctx.moveTo(cx-ojoOffX-15, cejaY); ctx.quadraticCurveTo(cx-ojoOffX, cejaY-10, cx-ojoOffX+15, cejaY);
+            ctx.moveTo(cx+ojoOffX+15, cejaY); ctx.quadraticCurveTo(cx+ojoOffX, cejaY-10, cx+ojoOffX-15, cejaY);
+        } else if (emocion === 'negativo') {
+            ctx.moveTo(cx-ojoOffX-15, cejaY+5); ctx.lineTo(cx-ojoOffX+15, cejaY);
+            ctx.moveTo(cx+ojoOffX+15, cejaY+5); ctx.lineTo(cx+ojoOffX-15, cejaY);
+        } else if (emocion === 'sorpresa') {
+            ctx.moveTo(cx-ojoOffX-15, cejaY-8); ctx.quadraticCurveTo(cx-ojoOffX, cejaY-18, cx-ojoOffX+15, cejaY-8);
+            ctx.moveTo(cx+ojoOffX+15, cejaY-8); ctx.quadraticCurveTo(cx+ojoOffX, cejaY-18, cx+ojoOffX-15, cejaY-8);
+        } else if (emocion === 'enfado') {
+            ctx.moveTo(cx-ojoOffX-18, cejaY); ctx.lineTo(cx-ojoOffX+12, cejaY-8);
+            ctx.moveTo(cx+ojoOffX+18, cejaY); ctx.lineTo(cx+ojoOffX-12, cejaY-8);
+        } else {
+            ctx.moveTo(cx-ojoOffX-15, cejaY); ctx.lineTo(cx-ojoOffX+15, cejaY);
+            ctx.moveTo(cx+ojoOffX+15, cejaY); ctx.lineTo(cx+ojoOffX-15, cejaY);
+        }
+        ctx.stroke();
+
+        ctx.beginPath(); ctx.strokeStyle = '#fff';
+        if (state.soloCara) {
+            if (emocion === 'positivo') ctx.arc(cx, bocaY, bocaAncho*0.6, 0, Math.PI, false);
+            else if (emocion === 'negativo') ctx.arc(cx, bocaY+bocaAlto*0.7, bocaAncho*0.6, Math.PI, 2*Math.PI, false);
+            else if (emocion === 'sorpresa') ctx.arc(cx, bocaY, bocaAncho*0.3, 0, Math.PI*2);
+            else if (emocion === 'enfado') { ctx.moveTo(cx-bocaAncho*0.5, bocaY); ctx.lineTo(cx+bocaAncho*0.5, bocaY); }
+            else { ctx.moveTo(cx-bocaAncho*0.5, bocaY); ctx.lineTo(cx+bocaAncho*0.5, bocaY); }
+        } else if (state.bocaAbierta) {
+            ctx.ellipse(cx, bocaY, bocaAncho*0.4, bocaAlto*0.8, 0, 0, Math.PI*2);
+        } else if (emocion === 'positivo') {
+            ctx.arc(cx, bocaY, bocaAncho*0.6, 0, Math.PI, false);
+        } else if (emocion === 'negativo') {
+            ctx.arc(cx, bocaY+bocaAlto*0.7, bocaAncho*0.6, Math.PI, 2*Math.PI, false);
+        } else if (emocion === 'sorpresa') {
+            ctx.arc(cx, bocaY, bocaAncho*0.3, 0, Math.PI*2);
+        } else if (emocion === 'enfado') {
+            ctx.moveTo(cx-bocaAncho*0.5, bocaY); ctx.lineTo(cx+bocaAncho*0.5, bocaY);
+        } else {
+            ctx.moveTo(cx-bocaAncho*0.5, bocaY); ctx.lineTo(cx+bocaAncho*0.5, bocaY);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(cx-ojoOffX, ojoY+2, r*0.05, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+ojoOffX, ojoY+2, r*0.05, 0, Math.PI*2); ctx.fill();
+
+        ctx.font = `${r*0.13}px sans-serif`; ctx.fillStyle = 'rgba(0,255,255,0.8)';
+        ctx.fillText('🤖 IA', 6, 18);
+    }
+
+    function setEmocion(nueva) {
+        if (state.emocionObjetivo === nueva) return;
+        state.emocionObjetivo = nueva;
+        state.tiempoTransicion = performance.now();
+    }
+    function actualizarTransicion() {
+        if (state.emocionActual === state.emocionObjetivo) return;
+        if (performance.now() - state.tiempoTransicion >= DURACION_TRANSICION) state.emocionActual = state.emocionObjetivo;
+    }
+
+    // ====================== SÍNTESIS DE VOZ ======================
+    let utteranceActual = null;
+    function crearUtterance(texto, emocion) {
+        const utt = new SpeechSynthesisUtterance(texto);
+        let rate = state.config.rate, pitch = state.config.pitch;
+        switch(state.config.estiloVoz) {
+            case 'duendecillo': pitch *= 1.4; rate *= 1.2; break;
+            case 'abuelito': pitch *= 0.75; rate *= 0.85; break;
+            case 'robot': pitch *= 0.6; rate *= 1.0; break;
+            case 'susurro': pitch *= 0.9; rate *= 0.8; break;
+        }
+        switch(emocion) {
+            case 'positivo': pitch *= 1.25; rate *= 1.15; break;
+            case 'negativo': pitch *= 0.8; rate *= 0.85; break;
+            case 'sorpresa': pitch *= 1.5; rate *= 1.3; break;
+            case 'enfado': pitch *= 0.85; rate *= 1.2; break;
+        }
+        utt.rate = rate; utt.pitch = pitch;
+        if (state.config.vozNombre) {
+            const voces = speechSynthesis.getVoices();
+            utt.voice = voces.find(v => v.name === state.config.vozNombre) || null;
+        }
+        return utt;
+    }
+
+    function hablarConEmocion(texto, emocionForzada = null, registrarFraseId = null) {
+        if (state.soloCara) {
+            setEmocion(emocionForzada || analizarSentimiento(texto));
+            return;
+        }
+        speechSynthesis.cancel();
+        if (state.narrando) finalizarNarracion();
+        const emocion = emocionForzada || analizarSentimiento(texto);
+        setEmocion(emocion);
+        utteranceActual = crearUtterance(texto, emocion);
+        let intervalo;
+        utteranceActual.onstart = () => { intervalo = setInterval(() => { state.bocaAbierta = !state.bocaAbierta; }, 120); };
+        utteranceActual.onend = () => {
+            clearInterval(intervalo);
+            state.bocaAbierta = false;
+            if (registrarFraseId) registrarUsoFrase(registrarFraseId);
+        };
+        utteranceActual.onerror = () => { clearInterval(intervalo); state.bocaAbierta = false; };
+        speechSynthesis.speak(utteranceActual);
+    }
+
+    function narrarTexto(textoCompleto) {
+        if (state.narrando) return;
+        state.listaFragmentos = (textoCompleto.match(/[^.!?¡¿]+[.!?¡¿]*/g) || [textoCompleto]).map(f=>f.trim()).filter(f=>f);
+        if (!state.listaFragmentos.length) return;
+        state.indiceFragmento = 0;
+        state.narrando = true;
+        EventBus.emit('narracionIniciada');
+        narrarSiguiente();
+    }
+    function narrarSiguiente() {
+        if (!state.narrando || state.indiceFragmento >= state.listaFragmentos.length) { finalizarNarracion(); return; }
+        const fragmento = state.listaFragmentos[state.indiceFragmento];
+        speechSynthesis.cancel();
+        if (state.soloCara) {
+            setEmocion(analizarSentimiento(fragmento));
+            state.indiceFragmento++;
+            setTimeout(narrarSiguiente, 500);
+            return;
+        }
+        const emocion = analizarSentimiento(fragmento);
+        setEmocion(emocion);
+        utteranceActual = crearUtterance(fragmento, emocion);
+        let intervalo;
+        utteranceActual.onstart = () => { intervalo = setInterval(() => { state.bocaAbierta = !state.bocaAbierta; }, 120); };
+        utteranceActual.onend = () => {
+            clearInterval(intervalo); state.bocaAbierta = false;
+            state.indiceFragmento++;
+            narrarSiguiente();
+        };
+        utteranceActual.onerror = () => { clearInterval(intervalo); state.bocaAbierta = false; finalizarNarracion(); };
+        speechSynthesis.speak(utteranceActual);
+    }
+    function finalizarNarracion() {
+        state.narrando = false; state.bocaAbierta = false;
+        EventBus.emit('narracionFinalizada');
+    }
+    function pararNarracion() { speechSynthesis.cancel(); finalizarNarracion(); }
+
+    // ====================== GESTIÓN DE FRASES ======================
+    function generarId() {
+        return 'f' + Date.now() + Math.random().toString(36).substr(2, 5);
+    }
+    function registrarUsoFrase(id) {
+        const frase = state.frases.find(f => f.id === id);
+        if (frase) {
+            frase.usos = (frase.usos || 0) + 1;
+            frase.fechaUltimoUso = Date.now();
+            Storage.guardar('frases', state.frases);
+        }
+    }
+    function ordenarFrases() {
+        const modo = state.ordenFrases;
+        switch(modo) {
+            case 'frecuencia': state.frases.sort((a,b) => (b.usos||0) - (a.usos||0)); break;
+            case 'alfabetico': state.frases.sort((a,b) => a.texto.localeCompare(b.texto)); break;
+            case 'reciente': state.frases.sort((a,b) => (b.fechaUltimoUso||0) - (a.fechaUltimoUso||0)); break;
+        }
+    }
+    function renderizarFrases() {
+        if (state.ordenFrases !== 'manual') ordenarFrases();
+        const lista = document.getElementById('listaFrases');
+        lista.innerHTML = '';
+        state.frases.forEach((f, idx) => {
+            const div = document.createElement('div'); div.className = 'frase-item';
+            const span = document.createElement('span'); span.className = 'frase-texto'; span.textContent = f.texto;
+            const btnHablar = document.createElement('button'); btnHablar.textContent = '🗣️'; btnHablar.title = 'Hablar';
+            btnHablar.onclick = () => hablarConEmocion(f.texto, f.emocion || null, f.id);
+            const btnEditar = document.createElement('button'); btnEditar.textContent = '✏️'; btnEditar.title = 'Editar';
+            btnEditar.onclick = () => editarFrase(idx);
+            const btnBorrar = document.createElement('button'); btnBorrar.textContent = '🗑️'; btnBorrar.title = 'Borrar';
+            btnBorrar.onclick = () => { state.frases.splice(idx,1); Storage.guardar('frases', state.frases); renderizarFrases(); };
+            div.append(span, btnHablar, btnEditar, btnBorrar);
+            lista.appendChild(div);
+        });
+    }
+    function nuevaFrase() {
+        const texto = prompt('Escribe la frase:');
+        if (!texto || !texto.trim()) return;
+        const emocion = prompt('Emoción (positivo, negativo, neutro, sorpresa, enfado, o dejar vacío para automático):') || 'automatico';
+        state.frases.push({
+            id: generarId(),
+            texto: texto.trim(),
+            emocion: emocion === 'automatico' ? null : emocion,
+            usos: 0,
+            fechaUltimoUso: null
+        });
+        Storage.guardar('frases', state.frases);
+        renderizarFrases();
+    }
+    function editarFrase(idx) {
+        const frase = state.frases[idx];
+        const texto = prompt('Edita el texto:', frase.texto);
+        if (texto === null) return;
+        const emocion = prompt('Emoción (positivo, negativo, neutro, sorpresa, enfado, o vacío para automático):', frase.emocion || 'automatico');
+        if (emocion === null) return;
+        frase.texto = texto.trim() || frase.texto;
+        frase.emocion = (emocion === 'automatico' || !emocion) ? null : emocion;
+        Storage.guardar('frases', state.frases);
+        renderizarFrases();
+    }
+
+    // ====================== GESTIÓN DE VOCES ======================
+    function esVozDeCalidad(voz) {
+        const nombre = voz.name.toLowerCase();
+        const deseables = ['google', 'microsoft', 'mónica', 'jorge', 'neural', 'premium'];
+        return deseables.some(d => nombre.includes(d));
+    }
+    function elegirMejorVoz() {
+        const voces = speechSynthesis.getVoices();
+        if (!voces.length) return null;
+        const vocesEs = voces.filter(v => v.lang.startsWith('es'));
+        const buena = vocesEs.find(esVozDeCalidad);
+        if (buena) return buena.name;
+        if (vocesEs.length) return vocesEs[0].name;
+        return voces[0].name;
+    }
+    function cargarVoces() {
+        const sel = document.getElementById('selectorVoces');
+        sel.innerHTML = '';
+        const voces = speechSynthesis.getVoices();
+        (voces.length ? voces : [{name:'default', lang:'es' }]).forEach(v => {
+            const opt = document.createElement('option');
+            const calidad = esVozDeCalidad(v) ? '✅ ' : '⚠️ ';
+            opt.value = v.name;
+            opt.textContent = calidad + v.name + ' (' + v.lang + ')';
+            sel.appendChild(opt);
+        });
+        if (state.config.vozNombre) sel.value = state.config.vozNombre;
+    }
+
+    // ====================== UI ======================
+    function cambiarPantalla(nombre) {
+        document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+        document.getElementById(nombre).classList.add('activa');
+        document.querySelectorAll('.barra-inferior button').forEach(b => b.classList.remove('activo'));
+        document.querySelector(`.barra-inferior button[data-pantalla="${nombre}"]`).classList.add('activo');
+    }
+    function renderizarSkins() {
+        const cont = document.getElementById('skinsPreview');
+        cont.innerHTML = '';
+        Object.keys(skins).forEach(nombre => {
+            const btn = document.createElement('span');
+            btn.className = 'skin-opt' + (state.config.skin === nombre ? ' seleccionado' : '');
+            btn.textContent = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+            btn.onclick = () => {
+                state.config.skin = nombre;
+                Storage.guardar('config', state.config);
+                renderizarSkins();
+                dibujarCara();
+            };
+            cont.appendChild(btn);
+        });
+    }
+    function guardarConfig() {
+        state.config.rate = parseFloat(document.getElementById('rate').value);
+        state.config.pitch = parseFloat(document.getElementById('pitch').value);
+        state.config.estiloVoz = document.getElementById('estiloVoz').value;
+        state.config.vozNombre = document.getElementById('selectorVoces').value;
+        state.config.idioma = document.getElementById('idiomaSelector').value;
+        Storage.guardar('config', state.config);
+        // Actualizar diccionario activo según idioma seleccionado
+        state.diccionario = DICCIONARIOS[state.config.idioma] || DICCIONARIOS.es;
+        alert('Configuración guardada.');
+    }
+
+    // ====================== INICIALIZACIÓN ======================
+    window.onload = () => {
+        // Establecer diccionario según idioma configurado (por defecto español)
+        state.diccionario = DICCIONARIOS[state.config.idioma] || DICCIONARIOS.es;
+
+        inicializarCanvas();
+        renderizarFrases();
+        renderizarSkins();
+        cargarVoces();
+
+        if (!state.config.vozNombre) {
+            const mejorVoz = elegirMejorVoz();
+            if (mejorVoz) {
+                state.config.vozNombre = mejorVoz;
+                Storage.guardar('config', state.config);
+                cargarVoces();
+            }
+        }
+        speechSynthesis.onvoiceschanged = () => {
+            cargarVoces();
+            if (!state.config.vozNombre) {
+                const mejorVoz = elegirMejorVoz();
+                if (mejorVoz) {
+                    state.config.vozNombre = mejorVoz;
+                    Storage.guardar('config', state.config);
+                    cargarVoces();
                 }
             }
-            return maxPeso >= 1 ? maxTipo : 'neutro';
-        }
+        };
 
-        // ====================== TRANSICIÓN SUAVE DE EMOCIÓN ======================
-        function setEmocion(nuevaEmocion) {
-            if (emocionObjetivo === nuevaEmocion) return;
-            emocionObjetivo = nuevaEmocion;
-            if (emocionActual !== nuevaEmocion) {
-                tiempoInicioTransicion = performance.now();
-            }
-        }
+        document.getElementById('rate').value = state.config.rate;
+        document.getElementById('pitch').value = state.config.pitch;
+        document.getElementById('estiloVoz').value = state.config.estiloVoz;
+        document.getElementById('selectorVoces').value = state.config.vozNombre || '';
+        document.getElementById('ordenFrases').value = state.ordenFrases;
+        document.getElementById('idiomaSelector').value = state.config.idioma;
 
-        function actualizarTransicion() {
-            if (emocionActual === emocionObjetivo) return;
-            const ahora = performance.now();
-            if (ahora - tiempoInicioTransicion >= DURACION_TRANSICION) {
-                emocionActual = emocionObjetivo;
-            }
-        }
+        document.getElementById('btnHablar').onclick = () => hablarConEmocion(document.getElementById('texto').value.trim());
+        document.getElementById('btnNarrar').onclick = () => narrarTexto(document.getElementById('texto').value.trim());
+        document.getElementById('btnParar').onclick = pararNarracion;
+        document.getElementById('btnNuevaFrase').onclick = nuevaFrase;
+        document.getElementById('btnSoloCara').onclick = function() {
+            state.soloCara = !state.soloCara;
+            this.textContent = state.soloCara ? '👁️ Solo cara: ON' : '👁️ Solo cara: OFF';
+            this.style.background = state.soloCara ? '#00aaaa' : '#555';
+            if (state.soloCara) { speechSynthesis.cancel(); state.bocaAbierta = false; }
+        };
+        document.getElementById('btnGuardarConfig').onclick = guardarConfig;
+        document.getElementById('ordenFrases').onchange = function() {
+            state.ordenFrases = this.value;
+            Storage.guardar('ordenFrases', state.ordenFrases);
+            renderizarFrases();
+        };
 
-        // ====================== DIBUJO DE LA CARA ======================
-        function dibujarCara() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
-            const r = Math.min(canvas.width, canvas.height) * 0.4;  // radio cabeza
-
-            // Cabeza
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.strokeStyle = '#ccc';
-            ctx.stroke();
-
-            const emocion = emocionActual;
-            const ojoY = cy - r * 0.55;
-            const ojoOffsetX = r * 0.45;
-            const cejaY = ojoY - r * 0.3;
-            const bocaY = cy + r * 0.45;
-            const bocaAncho = r * 0.45;
-            const bocaAlto = r * 0.2;
-
-            // Ojos (siempre semicírculos)
-            ctx.beginPath();
-            ctx.arc(cx - ojoOffsetX, ojoY, r * 0.1, 0, Math.PI, false);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(cx + ojoOffsetX, ojoY, r * 0.1, 0, Math.PI, false);
-            ctx.stroke();
-
-            // Cejas según emoción
-            ctx.beginPath();
-            ctx.strokeStyle = '#fff';
-            if (emocion === 'positivo') {
-                ctx.moveTo(cx - ojoOffsetX - 15, cejaY);
-                ctx.quadraticCurveTo(cx - ojoOffsetX, cejaY - 10, cx - ojoOffsetX + 15, cejaY);
-                ctx.moveTo(cx + ojoOffsetX + 15, cejaY);
-                ctx.quadraticCurveTo(cx + ojoOffsetX, cejaY - 10, cx + ojoOffsetX - 15, cejaY);
-            } else if (emocion === 'negativo') {
-                ctx.moveTo(cx - ojoOffsetX - 15, cejaY + 5);
-                ctx.lineTo(cx - ojoOffsetX + 15, cejaY);
-                ctx.moveTo(cx + ojoOffsetX + 15, cejaY + 5);
-                ctx.lineTo(cx + ojoOffsetX - 15, cejaY);
-            } else if (emocion === 'sorpresa') {
-                ctx.moveTo(cx - ojoOffsetX - 15, cejaY - 8);
-                ctx.quadraticCurveTo(cx - ojoOffsetX, cejaY - 18, cx - ojoOffsetX + 15, cejaY - 8);
-                ctx.moveTo(cx + ojoOffsetX + 15, cejaY - 8);
-                ctx.quadraticCurveTo(cx + ojoOffsetX, cejaY - 18, cx + ojoOffsetX - 15, cejaY - 8);
-            } else if (emocion === 'enfado') {
-                ctx.moveTo(cx - ojoOffsetX - 18, cejaY);
-                ctx.lineTo(cx - ojoOffsetX + 12, cejaY - 8);
-                ctx.moveTo(cx + ojoOffsetX + 18, cejaY);
-                ctx.lineTo(cx + ojoOffsetX - 12, cejaY - 8);
-            } else {
-                // neutro
-                ctx.moveTo(cx - ojoOffsetX - 15, cejaY);
-                ctx.lineTo(cx - ojoOffsetX + 15, cejaY);
-                ctx.moveTo(cx + ojoOffsetX + 15, cejaY);
-                ctx.lineTo(cx + ojoOffsetX - 15, cejaY);
-            }
-            ctx.stroke();
-
-            // Boca
-            ctx.beginPath();
-            if (bocaAbierta) {
-                ctx.ellipse(cx, bocaY, bocaAncho * 0.4, bocaAlto * 0.8, 0, 0, Math.PI * 2);
-            } else {
-                if (emocion === 'positivo') {
-                    ctx.arc(cx, bocaY, bocaAncho * 0.6, 0, Math.PI, false);
-                } else if (emocion === 'negativo') {
-                    ctx.arc(cx, bocaY + bocaAlto * 0.7, bocaAncho * 0.6, Math.PI, 2 * Math.PI, false);
-                } else if (emocion === 'sorpresa') {
-                    ctx.arc(cx, bocaY, bocaAncho * 0.3, 0, Math.PI * 2);
-                } else if (emocion === 'enfado') {
-                    ctx.moveTo(cx - bocaAncho * 0.5, bocaY);
-                    ctx.lineTo(cx + bocaAncho * 0.5, bocaY);
-                } else {
-                    ctx.moveTo(cx - bocaAncho * 0.5, bocaY);
-                    ctx.lineTo(cx + bocaAncho * 0.5, bocaY);
-                }
-            }
-            ctx.stroke();
-
-            // Pupilas
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(cx - ojoOffsetX, ojoY + 2, r * 0.05, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx + ojoOffsetX, ojoY + 2, r * 0.05, 0, Math.PI * 2); ctx.fill();
-
-            // Marca de agua ética INCRUSTADA
-            ctx.font = `${r*0.12}px sans-serif`;
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
-            ctx.fillText('🤖 IA', 8, 20);
-        }
-
-        // Bucle de animación para transiciones y boca
-        function loopAnimacion() {
-            actualizarTransicion();
-            dibujarCara();
-            requestAnimationFrame(loopAnimacion);
-        }
-
-        // ====================== SÍNTESIS DE VOZ ======================
-        function crearUtterance(texto, emocion) {
-            const utterance = new SpeechSynthesisUtterance(texto);
-            let rate = config.rate;
-            let pitch = config.pitch;
-            switch (emocion) {
-                case 'positivo': pitch *= 1.4; rate *= 1.25; break;
-                case 'negativo': pitch *= 0.7; rate *= 0.8; break;
-                case 'sorpresa': pitch *= 1.6; rate *= 1.4; break;
-                case 'enfado': pitch *= 0.8; rate *= 1.3; break;
-            }
-            utterance.rate = rate;
-            utterance.pitch = pitch;
-            if (config.voz) utterance.voice = config.voz;
-            return utterance;
-        }
-
-        // Función unificada que corta cualquier conversación previa y lanza una nueva
-        function iniciarHabla(texto, esNarracion = false) {
-            // Cancelar cualquier síntesis activa
-            speechSynthesis.cancel();
-            if (!esNarracion) {
-                // Si es una nueva conversación simple, detenemos la narración en curso
-                if (narrando) finalizarNarracion();
-            }
-
-            const emocion = analizarSentimiento(texto);
-            setEmocion(emocion);   // inicia transición visual
-
-            const utterance = crearUtterance(texto, emocion);
-            let intervalo;
-
-            utterance.onstart = () => {
-                intervalo = setInterval(() => {
-                    bocaAbierta = !bocaAbierta;
-                }, 120);
+        document.querySelectorAll('.emotion-btns button').forEach(btn => {
+            btn.onclick = () => {
+                state.emocionManual = btn.dataset.emocion;
+                document.querySelectorAll('.emotion-btns button').forEach(b => b.style.background = '#4a4a8a');
+                btn.style.background = '#8a4a8a';
+                if (state.emocionManual !== 'automatico') setEmocion(state.emocionManual);
             };
+        });
 
-            utterance.onend = () => {
-                clearInterval(intervalo);
-                bocaAbierta = false;
-                if (esNarracion && narrando) {
-                    indiceFragmentoActual++;
-                    if (indiceFragmentoActual < listaFragmentos.length) {
-                        iniciarHabla(listaFragmentos[indiceFragmentoActual], true);
-                    } else {
-                        finalizarNarracion();
-                    }
-                }
-            };
+        document.querySelectorAll('.barra-inferior button').forEach(btn => {
+            btn.onclick = () => cambiarPantalla(btn.dataset.pantalla);
+        });
 
-            utterance.onerror = () => {
-                clearInterval(intervalo);
-                bocaAbierta = false;
-                if (esNarracion) finalizarNarracion();
-            };
-
-            speechSynthesis.speak(utterance);
-        }
-
-        // ====================== ACCIONES DE BOTONES ======================
-        function hablarCaritas() {
-            const texto = document.getElementById('texto').value.trim();
-            if (texto === '' || narrando) return;
-            iniciarHabla(texto, false);
-        }
-
-        function narrarTexto() {
-            const textoCompleto = document.getElementById('texto').value.trim();
-            if (textoCompleto === '' || narrando) return;
-
-            const fragmentos = textoCompleto.match(/[^.!?¡¿]+[.!?¡¿]*/g) || [textoCompleto];
-            listaFragmentos = fragmentos.map(f => f.trim()).filter(f => f !== '');
-            if (listaFragmentos.length === 0) return;
-
-            indiceFragmentoActual = 0;
-            narrando = true;
+        EventBus.on('narracionIniciada', () => {
             document.getElementById('btnHablar').disabled = true;
             document.getElementById('btnNarrar').disabled = true;
             document.getElementById('btnParar').style.display = 'inline-block';
-            iniciarHabla(listaFragmentos[0], true);
-        }
-
-        function pararNarracion() {
-            speechSynthesis.cancel();
-            finalizarNarracion();
-        }
-
-        function finalizarNarracion() {
-            narrando = false;
-            bocaAbierta = false;
+        });
+        EventBus.on('narracionFinalizada', () => {
             document.getElementById('btnHablar').disabled = false;
             document.getElementById('btnNarrar').disabled = false;
             document.getElementById('btnParar').style.display = 'none';
+        });
+
+        const ayudaDialog = document.getElementById('ayudaVozDialog');
+        document.getElementById('mostrarAyudaVoz').onclick = (e) => { e.preventDefault(); ayudaDialog.showModal(); };
+        document.getElementById('cerrarAyudaVoz').onclick = () => { ayudaDialog.close(); };
+
+        const aviso = document.getElementById('aviso-unico');
+        if (aviso) setTimeout(() => aviso.style.display = 'none', 8000);
+
+        function loop() {
+            actualizarTransicion();
+            if (document.getElementById('pantalla-avatar').classList.contains('activa')) dibujarCara();
+            requestAnimationFrame(loop);
         }
-
-        // ====================== EMOCIONES MANUALES ======================
-        function setEmocionManual(emocion, element) {
-            emocionManual = emocion;
-            const botones = document.querySelectorAll('.emotion-btns button');
-            botones.forEach(b => b.style.background = '#4a4a8a');
-            if (element) element.style.background = '#8a4a8a';
-            // Si se selecciona una emoción manual, la aplicamos directamente
-            if (emocion !== 'automatico') {
-                setEmocion(emocion);
-            }
-        }
-
-        // ====================== CONFIGURACIÓN ======================
-        function cargarVoces() {
-            const selector = document.getElementById('selectorVoces');
-            selector.innerHTML = '';
-            const voces = speechSynthesis.getVoices();
-            const vocesFiltradas = voces.filter(v => v.lang.startsWith('es')) || voces;
-            (vocesFiltradas.length ? vocesFiltradas : voces).forEach(voz => {
-                const option = document.createElement('option');
-                option.value = voz.name;
-                option.textContent = `${voz.name} (${voz.lang})`;
-                selector.appendChild(option);
-            });
-            if (config.voz) {
-                const index = [...selector.options].findIndex(opt => opt.value === config.voz.name);
-                if (index >= 0) selector.selectedIndex = index;
-            }
-        }
-
-        function guardarConfig() {
-            config.rate = parseFloat(document.getElementById('rate').value);
-            config.pitch = parseFloat(document.getElementById('pitch').value);
-            config.umbralPositivo = parseInt(document.getElementById('umbralPos').value);
-            const selector = document.getElementById('selectorVoces');
-            const nombreVoz = selector.value;
-            const voces = speechSynthesis.getVoices();
-            config.voz = voces.find(v => v.name === nombreVoz) || null;
-            alert('Configuración guardada.');
-        }
-
-        // ====================== INICIALIZACIÓN ======================
-        window.onload = () => {
-            const ancho = Math.min(window.innerWidth * 0.9, 280);
-            canvas.width = ancho;
-            canvas.height = ancho;
-            dibujarCara();
-            document.getElementById('rate').value = config.rate;
-            document.getElementById('pitch').value = config.pitch;
-            document.getElementById('umbralPos').value = config.umbralPositivo;
-
-            cargarVoces();
-            speechSynthesis.onvoiceschanged = cargarVoces;
-
-            const aviso = document.getElementById('aviso-unico');
-            if (aviso) {
-                setTimeout(() => { aviso.style.display = 'none'; }, 8000);
-            }
-
-            // Arrancar bucle de animación para transiciones suaves
-            requestAnimationFrame(loopAnimacion);
-        };
-    </script>
+        requestAnimationFrame(loop);
+    };
+</script>
 </body>
 </html>
